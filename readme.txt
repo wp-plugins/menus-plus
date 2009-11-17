@@ -30,6 +30,7 @@ You know it. Just change the "Display Children?" option accordingly.
 
 == Screenshots ==
 
+1. A view from the admin interface.
 
 == Changelog ==
 
