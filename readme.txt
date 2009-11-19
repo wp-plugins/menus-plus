@@ -10,7 +10,16 @@ Creates an assembly of pages, categories, and external URLs into a nice heteroge
 
 == Description ==
 
-Creates an assembly of pages, categories, and external URLs into a nice heterogeneous list. For CMS applications of WordPress, organizing a menu list is a pain; this makes it easier. Drag and drop them until you like what you see. No hacks or finicky 'Page Order' methods need apply. 
+Creates an assembly of pages, categories, and external URLs into a nice heterogeneous list. For CMS applications of WordPress, organizing a menu list is a pain; this makes it easier. Drag and drop them until you like what you see. No hacks or finicky 'Page Order' methods need apply.
+
+Use
+
+1. Configure your list from the Menus Plus+ option page located in the 'Appearance' area. 
+1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
+
+Support 
+
+For any issues you're having with Menus Plus+, or if you'd like to suggest a feature, visit the [Plugin Homepage](http://keighl.com/plugins/menus-plus/ "Plugin homepage"). 
 
 == Installation ==
 
@@ -37,8 +46,5 @@ You know it. Just change the "Display Children?" option accordingly.
 = 1.0 =
 * Initial release.
 
-== Use ==
 
-1. Configure your list from the Menus Plus+ option page located in the 'Appearance' area. 
-1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
 

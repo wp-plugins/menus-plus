@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create a customized list of pages and categories in any order you want! To return the list use the template tag <code>&lt;?php menusplus(); ?&gt;</code></code> in your template. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.1
+Version: 1.0
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
