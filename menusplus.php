@@ -28,6 +28,8 @@ Author URI: http://www.keighl.com
 
 
 $mp_version = "1.0";
+update_option('mp_version', $mp_version);
+
 
 register_activation_hook(__FILE__,'menusplus_install');
 
@@ -284,7 +286,7 @@ function menusplus_js() {
 				update : function (event, ui) {
 					var list_order = $(this).sortable("serialize");
 					$.post(
-						"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 						{action:"menusplus_sort", list_order:list_order},
 						function(str) {
 						   //alert(str);
@@ -300,7 +302,7 @@ function menusplus_js() {
 					var id = $(ui.draggable).attr('id');
 					$(ui.draggable).fadeOut();
 					$.post(
-						"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 						{action:"menusplus_remove", id:id},
 						function(str) {
 						   //alert(str);
@@ -317,7 +319,7 @@ function menusplus_js() {
 						case "mp_add_page":
 							var wp_id = $('select#page_id').val();
 							$.post(
-								"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+								"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 								{action:"menusplus_add" , wp_id:wp_id , type:"page"},
 								function(str) {
 									 //alert(str);
@@ -328,7 +330,7 @@ function menusplus_js() {
 						case "mp_add_cat":
 							var wp_id = $('select#cat').val();
 							$.post(
-								"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+								"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 								{action:"menusplus_add" , wp_id:wp_id , type:"cat"},
 								function(str) {
 									 //alert(str);
@@ -350,7 +352,7 @@ function menusplus_js() {
 									return false;
 								}
 							$.post(
-								"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+								"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 								{action:"menusplus_add" , url:url , label:label, class:class , type:"url"},
 								function(str) {
 									 //alert(str);
@@ -369,7 +371,7 @@ function menusplus_js() {
 			function menusplus_list() {
 			
 				$.post(
-					"<?php echo get_option('site_url'); ?>/wp-admin/admin-ajax.php", 
+					"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 					{action:"menusplus_list"},
 					function(str) {
 						//alert(str);
@@ -528,9 +530,6 @@ function menusplus_remove() {
 
 function menusplus_install() {
 
-	global $mp_version;
-
-	$mp_installed_ver = get_option("mp_version");
 	
 	global $wpdb;
 	$table_name = $wpdb->prefix . "menusplus";
@@ -558,7 +557,6 @@ function menusplus_install() {
 
 	endif;
 	
-	update_option('mp_version', $mp_version);
 	update_option('mp_display_children' , "0");
 	
 }
