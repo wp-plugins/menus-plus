@@ -45,6 +45,9 @@ You know it. Just change the "Children" option accordingly. At this time you can
 
 == Changelog ==
 
+= 1.2 =
+* Fixed a bug that puts item at the first position after editing. 
+
 = 1.1 =
 * New interface, with Lightbox add/edit dialogs.
 * Per list item children handling, with various children sorting options. 
