@@ -45,6 +45,9 @@ You know it. Just change the "Children" option accordingly. At this time you can
 
 == Changelog ==
 
+= 1.3 =
+* Address some issues with database insert/update functions on stricter MySQL setups. 
+
 = 1.2 =
 * Fixed a bug that puts item at the first position after editing. 
 

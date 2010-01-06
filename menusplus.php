@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create a customized list of pages and categories in any order you want! To return the list use the template tag <code>&lt;?php menusplus(); ?&gt;</code></code> in your template. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.1.1
+Version: 1.3
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -99,7 +99,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.1";
+		$mp_version = "1.3";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -131,7 +131,7 @@ class MenusPlus {
 
 		<div class="wrap mp_margin_bottom">
 	    	<h2>Menus Plus +</h2> 
-			<strong>v. 1.1</strong> <a href="http://www.keighl.com/">by Keighl</a>
+			<strong>v. <?php echo get_option('mp_version'); ?></strong> <a href="http://www.keighl.com/">by Keighl</a>
 		</div>
 		<div class="wrap mp_margin_bottom">
 			<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=cat&width=350&height=250" title="<?php _e("Add a Category"); ?>"><?php _e("Add Category"); ?></a>
@@ -488,7 +488,7 @@ class MenusPlus {
 									alert('You must enter a label.')
 									$('input.add_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								} 
-								if (!str) {
+								if (str == "") {
 									tb_remove();
 									menusplus_list();
 								}
@@ -537,7 +537,7 @@ class MenusPlus {
 									alert('You must enter a label.')
 									$('input.edit_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								} 
-								if (!str) {
+								if (str == "") {
 									tb_remove();
 									menusplus_list();
 								}
@@ -545,22 +545,6 @@ class MenusPlus {
 						);
 					}
 				);
-				
-				// Display or hide child sorting options
-				
-				// $("input[name='add_children'], input[name='edit_children']").live("change", 
-				// 					function () {
-				// 						var children = $(this).val();
-				// 						if (children == "false") {
-				// 							$('tr#children_order_box').fadeOut();
-				// 						}
-				// 						if (children == "true") {
-				// 							$('tr#children_order_box').fadeIn();
-				// 						}
-				// 					}
-				// 				);
-				
-				// Remove
 				
 				$("a.mp_remove").live("click", 
 					function () {
@@ -697,6 +681,7 @@ class MenusPlus {
 		
 		$type  = $_POST['type'];
 		$wp_id = $_POST['wp_id'];
+			$wp_id = $this->is_undefined($wp_id);
 		$class = $_POST['opt_class'];
 		$label = $_POST['label'];
 		$url   = $_POST['url'];
@@ -760,6 +745,7 @@ class MenusPlus {
 		
 		$id  = $_POST['id'];
 		$wp_id = $_POST['wp_id'];
+			$wp_id = $this->is_undefined($wp_id);
 		$class = $_POST['opt_class'];
 		$label = $_POST['label'];
 		$url   = $_POST['url'];
@@ -884,6 +870,13 @@ class MenusPlus {
 		
 		exit();
 		
+	}
+	
+	function is_undefined($str) {
+		
+		if ($str == "undefined") : return 0;
+		else : return $str;
+		endif;
 	}
 	
 }
