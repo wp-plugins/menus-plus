@@ -2,8 +2,8 @@
 /*
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
-Description: Create a customized list of pages and categories in any order you want! To return the list use the template tag <code>&lt;?php menusplus(); ?&gt;</code></code> in your template. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.3
+Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. To return the lists use the template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
+Version: 1.4
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -48,6 +48,18 @@ class MenusPlus {
 		add_action('wp_ajax_menusplus_sort', array(&$this, 'sort'));
 		add_action('wp_ajax_menusplus_remove', array(&$this, 'remove'));
 		
+		add_action('wp_ajax_menusplus_menu_title', array(&$this, 'menu_title'));
+		add_action('wp_ajax_menusplus_menus_dropdown', array(&$this, 'menus_dropdown'));
+		
+		add_action('wp_ajax_menusplus_add_new_menu_dialog', array(&$this, 'new_menu_dialog'));
+		add_action('wp_ajax_menusplus_new_menu', array(&$this, 'new_menu'));
+		
+		add_action('wp_ajax_menusplus_edit_menu_dialog', array(&$this, 'edit_menu_dialog'));
+		add_action('wp_ajax_menusplus_edit_menu', array(&$this, 'edit_menu'));
+		
+		add_action('wp_ajax_menusplus_remove_menu_dialog', array(&$this, 'remove_menu_dialog'));
+		add_action('wp_ajax_menusplus_remove_menu', array(&$this, 'remove_menu'));
+				
 	}
 	
 	// Install
@@ -55,16 +67,19 @@ class MenusPlus {
 	function install() {
 		
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 
 		require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
-		$exists = $wpdb->query("SELECT * FROM '$table_name'");
+		// Does the menu items table exist?
+		
+		$exists = $wpdb->query("SELECT * FROM '$items_table'");
 
 		if(!$exists) :
 
-			$sql = "CREATE TABLE " . $table_name . " (
+			$sql = "CREATE TABLE " . $items_table . " (
 				id int NOT NULL AUTO_INCREMENT,
 				wp_id int NULL,
 				list_order int DEFAULT '0' NOT NULL, 
@@ -75,6 +90,7 @@ class MenusPlus {
 				children text NULL,
 				children_order text NULL,
 				children_order_dir text NULL,
+				menu_id int DEFAULT '1' NOT NULL,
 				PRIMARY  KEY id (id)
 				);";
 
@@ -82,7 +98,7 @@ class MenusPlus {
 
 		else :
 		
-			$sql = "ALTER TABLE " . $table_name . " (
+			$sql = "ALTER TABLE " . $items_table . " (
 				ADD UNIQUE id int NOT NULL AUTO_INCREMENT,
 				ADD UNIQUE wp_id int NULL,
 				ADD UNIQUE list_order int DEFAULT '0' NOT NULL, 
@@ -93,13 +109,43 @@ class MenusPlus {
 				ADD UNIQUE children text NULL,
 				ADD UNIQUE children_order text NULL,
 				ADD UNIQUE children_order_dir text NULL,
+				ADD UNIQUE menu_id int DEFAULT '1' NOT NULL,				
 				);";
 
 			dbDelta($sql);
 
 		endif;
 		
-		$mp_version = "1.3";
+		// Does the menus table exist?
+				
+		$exists = $wpdb->query("SELECT * FROM '$menus_table'");
+
+		if(!$exists) :
+
+			// Create the db.
+			
+			$sql = "CREATE TABLE " . $menus_table . " (
+				id int NOT NULL AUTO_INCREMENT,
+				menu_title text NULL,
+				menus_description text NULL,
+				PRIMARY  KEY id (id)
+				);";
+
+			dbDelta($sql);
+			
+			// Setup a default menu
+			
+			$default_title = 'Default';
+			
+			$data_array = array(
+				'menu_title'     => $default_title,
+			);
+			
+			$wpdb->insert($menus_table, $data_array );
+
+		endif;
+		
+		$mp_version = "1.4";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -124,27 +170,52 @@ class MenusPlus {
 	
 	function admin() {
 
-		$this->js();
+		// make a funciton to retrieve
+		$menu_id_from_get = $_GET['menu_id'];
+		
+		$menu_id = $this->get_menu_id($menu_id_from_get); 
+				
+		$this->js($menu_id);
 		$this->style();
-	
+			
 		?> 
 
 		<div class="wrap mp_margin_bottom">
-	    	<h2>Menus Plus +</h2> 
-			<strong>v. <?php echo get_option('mp_version'); ?></strong> <a href="http://www.keighl.com/">by Keighl</a>
+	    	<h2>Menus Plus+ <span class="mp_heading">v<?php echo get_option('mp_version'); ?> <a href="http://www.keighl.com/plugins/menus-plus/">by Keighl</a></span></h2> 
 		</div>
 		<div class="wrap mp_margin_bottom">
-			<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=cat&width=350&height=250" title="<?php _e("Add a Category"); ?>"><?php _e("Add Category"); ?></a>
-			<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=page&width=350&height=250" title="<?php _e("Add a Page"); ?>"><?php _e("Add Page"); ?></a>
-			<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=url&width=350&height=250" title="<?php _e("Add a URL"); ?>"><?php _e("Add URL"); ?></a>
+			<div class="mp_buttons_left">
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=cat&width=350&height=250" title="<?php _e("Add a Category"); ?>"><?php _e("Add Category"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=page&width=350&height=250" title="<?php _e("Add a Page"); ?>"><?php _e("Add Page"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=url&width=350&height=250" title="<?php _e("Add a URL"); ?>"><?php _e("Add URL"); ?></a>
+			</div>
+			<div class="mp_buttons_right">
+				<span class="mp_menu_title"></span> |
+				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("New Menu"); ?>">
+					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" />
+				</a>
+				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_remove_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("Delete Menu"); ?>">
+					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/remove.png" />
+				</a>
+				|
+				<select class="mp_switch_menu">
+				</select>
+				|
+				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_new_menu_dialog&width=350&height=100" title="<?php _e("New Menu"); ?>">
+					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/add.png" />
+				</a>
+				
+				
+			</div>
+			<div class="clear_list_floats"></div>
 		</div>
 		<div class="wrap postbox" id="menusplus_list">
 			<ul></ul>
 		</div>
 		<div class="wrap">
-			<p>In your template files, use:
-        	<code>&lt;?php menusplus(); ?&gt;</code></p>
-			<p><a href="http://www.keighl.com/plugins/menus-plus/">Docs</a></p>
+			<p><?php _e('Template Tag') ?>:
+        	<input class="mp_template_tag" value="&lt;?php menusplus(<?php echo $menu_id; ?>); ?&gt;" />
+			<a href="http://www.keighl.com/plugins/menus-plus/"><?php _e('Docs') ?></a></p>
 		</div>
 					
 	 	<?php 
@@ -259,10 +330,10 @@ class MenusPlus {
 		// Assemble our knowledge of this list item
 		
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 
-		$metas = $wpdb->get_results("SELECT * FROM $table_name WHERE id = $id", ARRAY_A );
+		$metas = $wpdb->get_results("SELECT * FROM $items_table WHERE id = $id", ARRAY_A );
 		
 		if (count($metas) > 0) :
 			foreach ($metas as $meta) :
@@ -275,6 +346,7 @@ class MenusPlus {
 				$children_order = $meta['children_order'];
 				$children_order_dir = $meta['children_order_dir'];
 				$list_order = $meta['list_order'];
+				$menu_id = $meta['menu_id'];
 			endforeach;
 		endif;
 		
@@ -372,13 +444,130 @@ class MenusPlus {
 		
 	}
 	
+	function new_menu_dialog() {
+		
+		?>
+		
+		<div class="new_menu">
+			<table cellspacing="16" cellpadding="0">
+				<tr>
+					<td><div align="right"><?php _e("Title"); ?></div></td>
+					<td><input class="new_menu_title" value="" /></td>
+				</tr>
+				<tr>
+					<td><div align="right"></div></td>
+					<td>
+						<a class="button" id="new_menu_submit" rel="<?php echo $type; ?>"><?php _e("Add"); ?></a>
+						<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
+					</td>
+				</tr>
+			</table>
+		</div>
+		
+		<?php
+		
+		exit();
+		
+	}
+	
+	function edit_menu_dialog() {
+		
+		$menu_id = $_GET['menu_id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+
+		$menus = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
+		
+		$title = $menus['menu_title'];
+		
+		?>
+		
+		<div class="new_menu">
+			<table cellspacing="16" cellpadding="0">
+				<tr>
+					<td><div align="right"><?php _e("Title"); ?></div></td>
+					<td><input class="edit_menu_title" value="<?php echo $title; ?>" /></td>
+				</tr>
+				<tr>
+					<td><div align="right"></div></td>
+					<td>
+						<a class="button" id="edit_menu_submit" rel="<?php echo $type; ?>"><?php _e("Update"); ?></a>
+						<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
+					</td>
+				</tr>
+			</table>
+		</div>
+		
+		<?php
+		
+		exit();
+		
+	}
+	
+	function remove_menu_dialog() {
+		
+		$menu_id = $_GET['menu_id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+
+		$menus = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
+		
+		$title = $menus['menu_title'];
+		
+		?>
+		
+		<div class="remove_menu">
+			<p><?php _e("Are you sure you want to delete the menu, <strong>$title</strong>?"); ?></p>
+			<p>
+				<a class="button" id="remove_menu_submit" rel="<?php echo $type; ?>"><?php _e("Delete"); ?></a>
+				<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
+			</p>
+		</div>
+		
+		<?php
+		
+		exit();
+		
+	}
+	
 	function style() { ?>
 
 		<style>
 		
+			.mp_margin_bottom h2 {
+				font-weight:bold;
+			}
+		
+			.mp_heading {
+				font-size:.6em;
+				font-weight:normal;
+				font-family: 'Lucida Grande', Helvetica, Arial, sans-serif;
+				
+			}
+			.mp_menu_title {
+				font-weight: bold;
+			}
+		
 			.mp_margin_bottom {
 				margin-bottom:15px;
 			}
+			
+			.mp_buttons_left {
+				float:left;
+			}
+			
+			.mp_buttons_right {
+				float:right;
+				margin-right:10px;
+			}
+			
+				.mp_buttons_right img {
+					vertical-align: middle;
+				}
 			
 			#menusplus_list {
 				padding:15px;
@@ -439,7 +628,7 @@ class MenusPlus {
 
 	}
 
-	function js() {
+	function js($menu_id) {
 		?>
 
 		<script type="text/javascript">
@@ -447,10 +636,11 @@ class MenusPlus {
 			jQuery(document).ready(function($) {
 
 				// Preloads
-				
-				menusplus_list();
+				menu_title(<?php echo $menu_id; ?>);
+				menus_dropdown(<?php echo $menu_id; ?>);
+				menusplus_list(<?php echo $menu_id; ?>);
 								
-				// Add
+				// Add lists
 				
 				$('.mp_add a#add_submit').live("click",
 					function () {
@@ -475,22 +665,23 @@ class MenusPlus {
 								children_order_dir:children_order_dir,
 								opt_class:opt_class,
 								label:label,
-								url:url
+								url:url,
+								menu_id : <?php echo $menu_id; ?>
 							},
 							function(str) {
 								if (str == "1") {
 									// URL issue
-									alert('You must enter a valid URL (http://www.example.com).')
+									alert('<?php _e('You must enter a valid URL.'); ?>');
 									$('input.add_url').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								}
 								if (str == "2") {
 									// Label issue
-									alert('You must enter a label.')
+									alert('<?php _e('You must enter a label.'); ?>');
 									$('input.add_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								} 
 								if (str == "") {
 									tb_remove();
-									menusplus_list();
+									menusplus_list(<?php echo $menu_id; ?>);
 								}
 							}
 						);
@@ -529,17 +720,17 @@ class MenusPlus {
 							function(str) {
 								if (str == "1") {
 									// URL issue
-									alert('You must enter a valid URL (http://www.example.com).')
+									alert('<?php _e('You must enter a valid URL.'); ?>');
 									$('input.edit_url').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								}
 								if (str == "2") {
 									// Label issue
-									alert('You must enter a label.')
+									alert('<?php _e('You must enter a label.'); ?>');
 									$('input.edit_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
 								} 
 								if (str == "") {
 									tb_remove();
-									menusplus_list();
+									menusplus_list(<?php echo $menu_id; ?>);
 								}
 							}
 						);
@@ -556,7 +747,7 @@ class MenusPlus {
 								id:id
 							},
 							function(str) {
-								menusplus_list();
+								menusplus_list(<?php echo $menu_id; ?>);
 							}
 						);
 					}
@@ -574,7 +765,7 @@ class MenusPlus {
 								list_order:list_order
 							},
 							function(str) {
-								menusplus_list();
+								menusplus_list(<?php echo $menu_id; ?>);
 							}
 						);
 					} ,
@@ -585,16 +776,128 @@ class MenusPlus {
 					function () {
 						tb_remove();
 					} 	
-				);			
+				);	
+				
+				// Add new menus
+				
+				$('.new_menu a#new_menu_submit').live("click",
+					function () {
+						var title = $('input.new_menu_title').val();
+						$.post(
+							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+							{
+								action:"menusplus_new_menu", 
+								title : title
+							},
+							function(str) {
+								if (str == "empty") {
+									// Title issue
+									alert('<?php _e('You must enter a title.'); ?>');
+									$('input.new_menu_title').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
+								} else {
+									window.location.replace('themes.php?page=menusplus&menu_id=' + str);
+								}
+							}
+						);
+					}
+				);	
+				
+				$('a#edit_menu_submit').live("click",
+					function () {
+						var title = $('input.edit_menu_title').val();
+						$.post(
+							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+							{
+								action:"menusplus_edit_menu", 
+								title : title,
+								menu_id : <?php echo $menu_id; ?>
+							},
+							function(str) {
+								if (str == "1") {
+									// Title issue
+									alert('You must enter a title.')
+									$('input.edit_menu_title').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
+								} else {
+									tb_remove();
+									// Stays on the current menu for now. 
+									menu_title(<?php echo $menu_id; ?>);
+									menus_dropdown(<?php echo $menu_id; ?>);
+									menusplus_list(<?php echo $menu_id; ?>);
+								}
+							}
+						);
+					}
+				);
+				
+				// Remove Menus
+				
+				$('a#remove_menu_submit').live("click",
+					function () {
+						var title = $('input.edit_menu_title').val();
+						$.post(
+							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+							{
+								action:"menusplus_remove_menu", 
+								menu_id : <?php echo $menu_id; ?>
+							},
+							function(str) {
+								if (str == 1) {
+									alert('<?php _e('You cannot delete your only menu.'); ?>');
+								} else {
+									window.location.replace('themes.php?page=menusplus');
+								}		
+							}
+						);
+					}
+				);
+				
+				// Switch Menus
+				
+				$('.mp_switch_menu').live("change" ,
+					function () {
+						var menu_id = $('.mp_switch_menu').val();
+						window.location.replace('themes.php?page=menusplus&menu_id='+menu_id);
+						
+					}
+				);
+								
 				
 				// Funtions
 				
-				function menusplus_list() {
+				function menu_title(menu_id) {
 					$.post(
 						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
-						{action:"menusplus_list"},
+						{
+							action:"menusplus_menu_title",
+							menu_id: menu_id
+						},
 						function(str) {
-							//alert(str);
+							$('.mp_menu_title').html(str);
+						}
+					);
+				}
+				
+				function menus_dropdown(menu_id) {
+					$.post(
+						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+						{
+							action:"menusplus_menus_dropdown",
+							menu_id: menu_id
+						},
+						function(str) {
+							$('select.mp_switch_menu').html(str);
+						}
+					);
+				}
+								
+				function menusplus_list(menu_id) {
+					$.post(
+						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+						{
+							action:"menusplus_list",
+							menu_id : menu_id
+						},
+						function(str) {
 							$('#menusplus_list ul').fadeOut('fast').html(str).fadeIn('slow');
 							removeThickBoxEvents();
 							tb_init('a.thickbox, area.thickbox, input.thickbox');
@@ -617,13 +920,74 @@ class MenusPlus {
 	
 	// Methods
 	
+	function get_menu_id($menu_id_from_get = null) {
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		// Returns the best possible menu_id
+		
+		if (!$menu_id_from_get) :
+			$item = $wpdb->get_row("SELECT * FROM $menus_table ORDER BY id", ARRAY_A );
+			return $item['id'];
+		else :
+			return $menu_id_from_get;
+		endif;
+		
+	}
+		
+	function menu_title() {
+		
+		$menu_id = $_POST['menu_id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$title = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
+		
+		echo $title['menu_title'];
+		
+		exit();
+		
+	}
+	
+	function menus_dropdown() {
+		
+		$menu_id = $_POST['menu_id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$items = $wpdb->get_results("SELECT * FROM $menus_table ORDER BY id ASC", ARRAY_A );
+		
+		if ($items) :
+		
+			foreach ($items as $item) :
+				$id = $item['id'];
+				$title = $item['menu_title'];
+				$is_selected = ($item['id'] == $menu_id) ? 'selected="selected"' : '';
+				echo "<option value=\"$id\" $is_selected >$title</option>";
+			
+			endforeach;
+		
+		endif;
+		
+	}
+	
 	function list_menu() {
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		
+		$menu_id = $_POST['menu_id'];
+		
+		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 
-		$items = $wpdb->get_results("SELECT * FROM $table_name ORDER BY list_order ASC", ARRAY_A );
+		$items = $wpdb->get_results("SELECT * FROM $items_table WHERE menu_id = $menu_id ORDER BY list_order ASC", ARRAY_A );
 
 		if (count($items) > 0) :
 			foreach ($items as $item) :
@@ -634,7 +998,7 @@ class MenusPlus {
 				$list_order = $item['list_order'];
 				$url = $item['url'];
 				$label = $item['label'];
-
+				
 				switch ($type) :
 					case "page" :
 						$page = get_page($wp_id);
@@ -676,7 +1040,7 @@ class MenusPlus {
 	function add() {
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 		
 		$type  = $_POST['type'];
@@ -688,12 +1052,13 @@ class MenusPlus {
 		$children = $_POST['children'];
 		$children_order = $_POST['children_order'];
 		$children_order_dir = $_POST['children_order_dir'];
+		$menu_id = $_POST['menu_id'];
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
 		$url = stripslashes($url);
 		
-		$highest_order = $this->highest_order() + 1;
+		$highest_order = $this->highest_order($menu_id) + 1;
 
 		$data_array = array(
 				'type'					=> $type,
@@ -704,7 +1069,8 @@ class MenusPlus {
 				'label'      			=> $label,
 				'children'   			=> $children,
 				'children_order' 		=> $children_order,
-				'children_order_dir' 	=> $children_order_dir
+				'children_order_dir' 	=> $children_order_dir,
+				'menu_id'				=> $menu_id
 				);
 				
 		// Validate for URL submissions
@@ -731,7 +1097,7 @@ class MenusPlus {
 		
 		endif;
 
-		$wpdb->insert($table_name, $data_array );
+		$wpdb->insert($items_table, $data_array );
 
 		exit();
 
@@ -740,7 +1106,7 @@ class MenusPlus {
 	function edit() {
 		
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 		
 		$id  = $_POST['id'];
@@ -793,7 +1159,7 @@ class MenusPlus {
 		endif;
 		
 		$where = array('id' => $id);
-		$wpdb->update($table_name, $data_array, $where );
+		$wpdb->update($items_table, $data_array, $where );
 		
 		exit();
 		
@@ -802,7 +1168,7 @@ class MenusPlus {
 	function sort() {
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 
 		$ids = $_POST['list_order'];
@@ -821,12 +1187,90 @@ class MenusPlus {
 				"list_order" => $list_order
 				);
 			$where = array('id' => $id);
-			$wpdb->update($table_name, $data_array, $where );
+			$wpdb->update($items_table, $data_array, $where );
 
 		endforeach;
 
 		exit();
 
+	}
+
+	function new_menu() {
+		
+		$title = $_POST['title'];
+		
+		if (empty($title)) : echo "empty"; exit(); endif;
+		
+		$title = stripslashes($title);
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$data_array = array(
+			'menu_title' => $title,
+		);
+		
+		$wpdb->insert($menus_table, $data_array );
+		
+		echo $last_result = $wpdb->insert_id;
+		
+		exit();
+		
+	}
+	
+	function edit_menu() {
+		
+		$title = $_POST['title'];
+		$id = $_POST['menu_id'];
+		
+		if (empty($title)) : echo 1; exit(); endif;
+		
+		$title = stripslashes($title);
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$data_array = array(
+			'menu_title' => $title,
+		);
+		
+		$where = array('id' => $id);
+		$wpdb->update($menus_table, $data_array, $where );
+
+		exit();
+		
+	}
+	
+	function remove_menu() {
+		
+		$id = $_POST['menu_id'];
+		
+		// Delete the menu
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$items_table = $wpdb->prefix . "menusplus";
+		$wpdb->show_errors();
+		
+		// How many menus are there?
+		
+		$count = $wpdb->query("SELECT * from $menus_table");
+
+		if ($count == 1) :
+		
+			echo 1;
+			
+		else :
+		
+			$wpdb->query("DELETE from $items_table WHERE menu_id = $id");
+			$wpdb->query("DELETE from $menus_table WHERE id = $id");
+			
+		endif;
+
+		exit();
+		
 	}
 
 	function remove() {
@@ -844,16 +1288,16 @@ class MenusPlus {
 
 	}
 	
-	function highest_order() {
+	function highest_order($menu_id) {
 		
 		// Find the highest order thus far
 		// dapt for future release to accomdate sortable children
 		
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 		
-		$items = $wpdb->get_results("SELECT list_order FROM $table_name", ARRAY_N);
+		$items = $wpdb->get_results("SELECT list_order FROM $items_table WHERE menu_id = $menu_id", ARRAY_N);
 
 		if (count($items) > 0) :
 			$order_set = array();
@@ -861,7 +1305,6 @@ class MenusPlus {
 			  $order_set[] = $item[0];
 			endforeach;
 			$highest_order = max($order_set);
-			// echo $highest_order;
 		else :
 			$highest_order = 0;
 	    endif;
@@ -883,13 +1326,23 @@ class MenusPlus {
 
 // Template tags
 
-function menusplus() {
+function menusplus($passed_menu_id = null) {
 
 	global $wpdb;
-	$table_name = $wpdb->prefix . "menusplus";
+	$items_table = $wpdb->prefix . "menusplus";
+	$menus_table = $wpdb->prefix . "menusplus_menus";
 	$wpdb->show_errors();
 	
-	$items = $wpdb->get_results("SELECT * FROM $table_name ORDER BY list_order ASC", ARRAY_A);
+	// Returns the best possible menu_id
+	
+	if (!$passed_menu_id) :
+		$item = $wpdb->get_row("SELECT * FROM $menus_table ORDER BY id ASC", ARRAY_A );
+		$menu_id = $item['id'];
+	else :
+		$menu_id = $passed_menu_id;
+	endif;
+	
+	$items = $wpdb->get_results("SELECT * FROM $items_table WHERE menu_id = $menu_id ORDER BY list_order ASC", ARRAY_A);
 	
 	if (count($items) > 0) :
 		foreach ($items as $item) :
