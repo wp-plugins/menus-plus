@@ -1,12 +1,12 @@
 === Menus Plus+ ===
 Contributors: keighl
 Donate link: http://www.keighl.com/plugins/menus-plus/
-Tags: menu, page order, category order, sub menus, cms
+Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation
 Requires at least: 2.5
 Tested up to: 2.9
 Stable tag: trunk
 
-Create multiple customized menus with pages, categories, and URLS.
+Create multiple customized menus with pages, categories, and URLS; widget and template tag. 
 
 == Description ==
 
@@ -14,13 +14,16 @@ Create multiple customized menus with pages, categories, and URLS. For CMS appli
 
 = Use =
 
-1. Configure your list from the Menus Plus+ option page located in the 'Appearance' area. 
-1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
-1. If you have multiple lists, use the `<?php menusplus(#); ?>` tag provided on the configuration page.
+1. Configure your lists from the Menus Plus+ option page at 'Appearance > Menus Plus+' 
+1. Create some Menus Plus+ widgets via 'Appearance > Widgets'
+1. Or use the template tag:
+	1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
+	1. If you have multiple lists, use the `<?php menusplus(#); ?>` tag provided on the configuration page.
 
 =Features=
 
 1. Combine pages, categories, and URLs together in unprecedented harmony.
+1. Widgetized
 1. Choose to display children on a per-item basis
 1. Create as many lists as you want!
 1. Optional `class` assignment for external URLs
@@ -32,9 +35,8 @@ For any issues you're having with Menus Plus+, or if you'd like to suggest a fea
 
 == Installation ==
 
-1. Upload `menusplus.php` to the `/wp-content/plugins/` directory
+1. Upload the entire `/menus-plus/` folder to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php menusplus(); ?>` in your template ... wherever you want it
 
 == Frequently Asked Questions ==
 
@@ -48,15 +50,25 @@ You know it. Just change the "Children" option accordingly. At this time you can
 
 = How do I return my separate lists? =
 
+You can either create a widget for that specific list through 'Appearance > Widgets', or use the template tag.
+
 When you edit a list, a little box beneath gives you the correct template tag for showing that particular list. For example, `<?php menusplus(3); ?>`. If you leave out the number, the earliest list is returned. 
+
+= Will the widget necessarily display the widgets title? =
+
+The widget will display a title only if you supply one. If the list is going to be your main navigation, and you don't want the list title to be show, simply leave it blank. 
 
 == Screenshots ==
 
 1. A view from the admin interface.
 1. Add a category to the list. 
 1. Adding an external URL. 
+1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.5 =
+* Now available as a widget. 
 
 = 1.4 =
 * Now, you can create MULTIPLE lists! New additions to the interface, but nothing you can't handle. Call the lists like this `<?php menusplus(#); ?>`.
@@ -73,6 +85,3 @@ When you edit a list, a little box beneath gives you the correct template tag fo
 
 = 1.0 =
 * Initial release.
-
-
-

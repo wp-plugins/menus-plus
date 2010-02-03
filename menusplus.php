@@ -2,8 +2,8 @@
 /*
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
-Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. To return the lists use the template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.4
+Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
+Version: 1.5
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -32,13 +32,12 @@ class MenusPlus {
 
 	function MenusPlus() {
 		
-		wp_enqueue_style('thickbox');
-		
 		register_activation_hook(__FILE__, array(&$this, 'install'));
 		
 		add_action('admin_menu', array(&$this, 'add_admin'));
 		
 		add_action("admin_print_scripts", array(&$this, 'js_libs'));
+		add_action("admin_print_styles", array(&$this, 'style_libs'));
 		
 		add_action('wp_ajax_menusplus_list', array(&$this, 'list_menu'));
 		add_action('wp_ajax_menusplus_add_dialog', array(&$this, 'add_dialog'));
@@ -59,6 +58,8 @@ class MenusPlus {
 		
 		add_action('wp_ajax_menusplus_remove_menu_dialog', array(&$this, 'remove_menu_dialog'));
 		add_action('wp_ajax_menusplus_remove_menu', array(&$this, 'remove_menu'));
+		
+		add_action("widgets_init", array(&$this, 'init_widget'));
 				
 	}
 	
@@ -145,7 +146,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.4";
+		$mp_version = "1.5";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -165,6 +166,15 @@ class MenusPlus {
 			
 	}
 	
+	function style_libs() {
+		wp_enqueue_style('thickbox');
+	}
+	
+	function init_widget() {
+
+		register_widget('MenusPlusWidget');
+
+	}
 	
 	// Views
 	
@@ -1320,6 +1330,106 @@ class MenusPlus {
 		if ($str == "undefined") : return 0;
 		else : return $str;
 		endif;
+	}
+	
+}
+
+class MenusPlusWidget extends WP_Widget {
+	
+	function MenusPlusWidget() {
+		
+		$widget_ops = array( 'classname' => 'menus_plus', 'description' => 'Add one of your Menus Plus+ lists in widget form.' );
+
+		$control_ops = array( 'id_base' => 'menus_plus' );
+
+		$this->WP_Widget( 'menus_plus', __('Menus Plus+', 'menus_plus'), $widget_ops, $control_ops );
+		
+	}
+	
+	function form($instance) {
+		
+		$instance = wp_parse_args( (array) $instance, $defaults );	
+		
+		?>
+		
+		<table width="100%" cellspacing="6">
+			<!-- Title -->
+			<tr>
+				<td>
+					<label for="<?php echo $this->get_field_id( 'title' ); ?>"><strong><?php _e('Title:'); ?></strong></label>
+				</td>
+				<td>
+					<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo $instance['title']; ?>" />
+				</td>
+			</tr>
+			<!-- Menu -->
+			<tr>
+				<td>
+					<label for="<?php echo $this->get_field_id( 'menu' ); ?>"><strong><?php _e('Menu:'); ?></strong></label>
+				</td>
+				<td>
+					<select id="<?php echo $this->get_field_id( 'menu' ); ?>" name="<?php echo $this->get_field_name( 'menu' ); ?>">
+						<?php $this->menus_dropdown($instance['menu']); ?>
+					</select>
+				</td>
+			</tr>
+		</table>
+		
+		<?php		
+	}
+	
+	function update($new_instance, $old_instance) {
+		
+		$instance['title'] = strip_tags( $new_instance['title'] );
+		$instance['menu'] = strip_tags( $new_instance['menu'] );
+		
+		return $instance;
+		
+	}
+	
+	function menus_dropdown($menu = NULL) {
+				
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$items = $wpdb->get_results("SELECT * FROM $menus_table ORDER BY id ASC", ARRAY_A );
+		
+		if ($items) :
+		
+			foreach ($items as $item) :
+				$id = $item['id'];
+				$title = $item['menu_title'];
+				
+				$is_selected = ($menu == $id) ? 'selected="selected"' : '';
+				
+				echo "<option value=\"$id\" $is_selected >$title</option>";
+			
+			endforeach;
+		
+		endif;
+		
+	}
+	
+	function widget($args, $instance) {
+		
+		extract( $args );
+		
+	 	$title = apply_filters('widget_title', $instance['title'] );
+		$menu = $instance['menu'];
+		
+		echo $before_widget;
+		
+			if ($title) : 
+				echo $before_title . $title . $after_title;
+			endif;
+		
+			if (function_exists('menusplus')) :
+				menusplus($menu);
+			endif;
+		
+		echo $after_widget;
+		
 	}
 	
 }
