@@ -1,16 +1,16 @@
 === Menus Plus+ ===
 Contributors: keighl
 Donate link: http://www.keighl.com/plugins/menus-plus/
-Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation
+Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation, posts
 Requires at least: 2.5
 Tested up to: 2.9
 Stable tag: trunk
 
-Create multiple customized menus with pages, categories, and URLS; widget and template tag. 
+Create multiple customized menus with pages, posts, categories, and URLS; widget and template tag. 
 
 == Description ==
 
-Create multiple customized menus with pages, categories, and URLS. For CMS applications of WordPress, organizing a menu list is a pain; this makes it easier. Drag and drop them until you like what you see. No hacks or finicky 'Page Order' methods need apply.
+Create multiple customized menus with pages, posts, categories, and URLS. For CMS applications of WordPress, organizing a menu list is a pain; this makes it easier. Drag and drop them until you like what you see. No hacks or finicky 'Page Order' methods need apply.
 
 = Use =
 
@@ -22,10 +22,11 @@ Create multiple customized menus with pages, categories, and URLS. For CMS appli
 
 =Features=
 
-1. Combine pages, categories, and URLs together in unprecedented harmony.
+1. Combine pages, posts, categories, and URLs together in unprecedented harmony.
 1. Widgetized
 1. Choose to display children on a per-item basis
 1. Create as many lists as you want!
+1. Dedicated 'Home Page' option
 1. Optional `class` assignment for external URLs
 1. Fun to drag and drop!
 
@@ -66,6 +67,11 @@ The widget will display a title only if you supply one. If the list is going to 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.6 =
+* Add posts to the menu
+* Dedicated 'Home Page' option now available
+* Configurable `target` parameter for external URLs
 
 = 1.5 =
 * Now available as a widget. 
