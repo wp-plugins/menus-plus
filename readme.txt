@@ -2,7 +2,7 @@
 Contributors: keighl
 Donate link: http://www.keighl.com/plugins/menus-plus/
 Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation, posts
-Requires at least: 2.5
+Requires at least: 2.8
 Tested up to: 2.9
 Stable tag: trunk
 
