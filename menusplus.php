@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.6
+Version: 1.7
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -31,6 +31,8 @@ $menusplus = new MenusPlus();
 class MenusPlus {
 
 	function MenusPlus() {
+		
+		load_plugin_textdomain('menus_plus', false, 'menus-plus/languages');
 		
 		register_activation_hook(__FILE__, array(&$this, 'install'));
 		
@@ -76,7 +78,7 @@ class MenusPlus {
 
 		// Does the menu items table exist?
 		
-		$exists = $wpdb->query("SELECT * FROM '$items_table'");
+		$exists = $wpdb->query("SELECT * FROM $items_table");
 
 		if(!$exists) :
 
@@ -121,7 +123,7 @@ class MenusPlus {
 		
 		// Does the menus table exist?
 				
-		$exists = $wpdb->query("SELECT * FROM '$menus_table'");
+		$exists = $wpdb->query("SELECT * FROM $menus_table");
 
 		if(!$exists) :
 
@@ -148,7 +150,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.6";
+		$mp_version = "1.7";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -183,13 +185,14 @@ class MenusPlus {
 	function admin() {
 
 		// make a funciton to retrieve
+		
 		$menu_id_from_get = $_GET['menu_id'];
 		
 		$menu_id = $this->get_menu_id($menu_id_from_get); 
 				
 		$this->js($menu_id);
 		$this->style();
-			
+
 		?> 
 
 		<div class="wrap mp_margin_bottom">
@@ -205,7 +208,7 @@ class MenusPlus {
 			</div>
 			<div class="mp_buttons_right">
 				<span class="mp_menu_title"></span> |
-				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("New Menu"); ?>">
+				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("Edit Menu"); ?>">
 					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" />
 				</a>
 				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_remove_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("Delete Menu"); ?>">
@@ -289,6 +292,11 @@ class MenusPlus {
 								<option value="count"><?php _e("Count"); ?></option>
 								<option value="slug"><?php _e("Slug"); ?></option>
 								<option value="term_group"><?php _e("Term Group"); ?></option>
+								<?php
+									if ( function_exists('mycategoryorder') ) :
+										echo '<option value="order">' . _('My Category Order') . '</option>';
+									endif;
+								?>
 							</select>
 							<select class="add_children_order_dir">
 								<option value="ASC">ASC</option>
@@ -328,6 +336,11 @@ class MenusPlus {
 								<option value="ID"><?php _e("ID"); ?></option>
 								<option value="post_author"><?php _e("Author"); ?></option>
 								<option value="post_name"><?php _e("Slug"); ?></option>
+								<?php
+									if ( function_exists('mypageorder') ) :
+										echo '<option value="menu_order">' . _('My Page Order') . '</option>';
+									endif;
+								?>
 							</select>
 							<select class="add_children_order_dir">
 								<option value="ASC">ASC</option>
@@ -374,7 +387,7 @@ class MenusPlus {
 						<td><div align="right"><?php _e("Class"); ?></div></td>
 						<td><input class="add_class" value="" /></td>
 					</tr>
-				<?php else : ?>
+			
 					
 				<?php endif; ?>
 				<tr>
@@ -471,6 +484,9 @@ class MenusPlus {
 								<option value="count" <?php if ($children_order == "count") : ?> selected="selected" <?php endif; ?> ><?php _e("Count"); ?></option>
 								<option value="slug" <?php if ($children_order == "slug") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
 								<option value="term_group" <?php if ($children_order == "term_group") : ?> selected="selected" <?php endif; ?> ><?php _e("Term Group"); ?></option>
+								<?php if ( function_exists('mycategoryorder') ) : ?>
+									<option value="order" <?php if ($children_order == "order") : ?> selected="selected" <?php endif; ?> ><?php _e("My Category Order"); ?></option>	
+								<?php endif; ?>
 							</select>
 							<select class="edit_children_order_dir">
 								<option value="ASC" <?php if ($children_order_dir == "ASC") : ?> selected="selected" <?php endif; ?> >ASC</option>
@@ -510,6 +526,9 @@ class MenusPlus {
 								<option value="ID" <?php if ($children_order == "ID") : ?> selected="selected" <?php endif; ?> ><?php _e("ID"); ?></option>
 								<option value="post_author" <?php if ($children_order == "post_author") : ?> selected="selected" <?php endif; ?> ><?php _e("Author"); ?></option>
 								<option value="post_name" <?php if ($children_order == "post_name") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
+								<?php if ( function_exists('mypageorder') ) : ?>
+									<option value="menu_order" <?php if ($children_order == "menu_order") : ?> selected="selected" <?php endif; ?> ><?php _e("My Page Order"); ?></option>	
+								<?php endif; ?>
 							</select>
 							<select class="edit_children_order_dir">
 								<option value="ASC" <?php if ($children_order_dir == "ASC") : ?> selected="selected" <?php endif; ?> >ASC</option>
@@ -556,6 +575,7 @@ class MenusPlus {
 						<td><div align="right"><?php _e("Class"); ?></div></td>
 						<td><input class="edit_class" value="<?php echo $class; ?>" /></td>
 					</tr>
+							
 				<?php else : ?>
 					
 				<?php endif; ?>
@@ -758,6 +778,10 @@ class MenusPlus {
 				}
 				
 				.mp_home_url {
+					color:#21759b;
+				}
+				
+				.mp_in_order_to {
 					color:#21759b;
 				}
 			
@@ -1114,6 +1138,7 @@ class MenusPlus {
 		if ($items) :
 		
 			foreach ($items as $item) :
+				
 				$id = $item['id'];
 				$title = $item['menu_title'];
 				$is_selected = ($item['id'] == $menu_id) ? 'selected="selected"' : '';
@@ -1146,6 +1171,7 @@ class MenusPlus {
 				$list_order = $item['list_order'];
 				$url = $item['url'];
 				$label = $item['label'];
+				$menu_id = $item['menu_id'];
 				
 				switch ($type) :
 					case "home" :
@@ -1166,6 +1192,10 @@ class MenusPlus {
 					case "url" :
 						$sort_title = $label;
 						break;
+					case "hybrid" :
+						$menu = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $wp_id", OBJECT );
+						$sort_title = $menu->menu_title;
+						break;
 					default:
 				endswitch;
 				?>
@@ -1174,7 +1204,7 @@ class MenusPlus {
 						<?php echo $sort_title; ?>
 					</div>
 					<div class="list_item_meta">
-						<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_dialog&id=<?php echo $id; ?>&width=350&height=250" title="Edit <?php echo $sort_title; ?>">
+						<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_dialog&id=<?php echo $id; ?>&width=350&height=250&current_id=<?php echo $menu_id; ?>" title="Edit <?php echo $sort_title; ?>">
 							<?php _e("Edit"); ?>
 						</a>
 						<a class="mp_remove" id="mp_remove_<?php echo $id; ?>">
@@ -1537,7 +1567,7 @@ class MenusPlus {
 		endif;
 		
 	}
-	
+			
 }
 
 class MenusPlusWidget extends WP_Widget {
@@ -1729,13 +1759,13 @@ function menusplus($passed_menu_id = null) {
 			
 				if ($children == "true") :
 				
-					$children = get_categories("child_of=$wp_id&hide_empty=0");
+					$children = get_categories("child_of=$wp_id&orderby=$children_order&hide_empty=0");
 
 					foreach ($children as $child) :
 						$wp_id = $wp_id . "," . $child->cat_ID;
 					endforeach;
 					
-					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&order_by=$children_order&order=$children_order_dir");
+					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&orderby=$children_order&order=$children_order_dir");
 				
 				else :
 			
@@ -1752,6 +1782,8 @@ function menusplus($passed_menu_id = null) {
 				echo "</li>";
 		
 			endif;
+			
+		
 
 		endforeach;
     endif;

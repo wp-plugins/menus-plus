@@ -1,0 +1,268 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Menus Plus\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-02-18 14:27+0100\n"
+"PO-Revision-Date: 2010-02-18 14:28+0100\n"
+"Last-Translator: Denis Rebaud <denis@rebaud.fr>\n"
+"Language-Team: Denis Rebaud <denis@rebaud.fr>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-Language: French\n"
+"X-Poedit-Country: FRANCE\n"
+"X-Poedit-SourceCharset: iso-8859-1\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../menusplus.php:202
+msgid "Add Home Page"
+msgstr "Ajouter la page d'accueil"
+
+#: ../menusplus.php:202
+#: ../menusplus.php:266
+msgid "Home"
+msgstr "Accueil"
+
+#: ../menusplus.php:203
+msgid "Add a Category"
+msgstr "Ajouter une catégorie"
+
+#: ../menusplus.php:203
+#: ../menusplus.php:276
+#: ../menusplus.php:460
+msgid "Category"
+msgstr "Catégorie"
+
+#: ../menusplus.php:204
+msgid "Add a Page"
+msgstr "Ajouter une page"
+
+#: ../menusplus.php:204
+#: ../menusplus.php:315
+#: ../menusplus.php:499
+msgid "Page"
+msgstr "Page"
+
+#: ../menusplus.php:205
+msgid "Add a Post"
+msgstr "Ajouter un article"
+
+#: ../menusplus.php:205
+#: ../menusplus.php:355
+#: ../menusplus.php:539
+msgid "Post"
+msgstr "Article"
+
+#: ../menusplus.php:206
+msgid "Add a URL"
+msgstr "Ajouter une adresse Web"
+
+#: ../menusplus.php:206
+#: ../menusplus.php:261
+#: ../menusplus.php:370
+#: ../menusplus.php:445
+#: ../menusplus.php:554
+msgid "URL"
+msgstr "Adresse Web"
+
+#: ../menusplus.php:210
+#: ../menusplus.php:220
+msgid "New Menu"
+msgstr "Nouveau menu"
+
+#: ../menusplus.php:213
+msgid "Delete Menu"
+msgstr "Supprimer le menu"
+
+#: ../menusplus.php:232
+msgid "Template Tag"
+msgstr "Code HTML à insérer dans vos thèmes "
+
+#: ../menusplus.php:234
+msgid "Docs"
+msgstr "Documentation en ligne"
+
+#: ../menusplus.php:246
+msgid "Category Order"
+msgstr "Ordre des catégories"
+
+#: ../menusplus.php:265
+#: ../menusplus.php:374
+#: ../menusplus.php:449
+#: ../menusplus.php:558
+msgid "Label"
+msgstr "Label"
+
+#: ../menusplus.php:269
+#: ../menusplus.php:365
+#: ../menusplus.php:387
+#: ../menusplus.php:453
+#: ../menusplus.php:549
+#: ../menusplus.php:571
+msgid "Class"
+msgstr "classe"
+
+#: ../menusplus.php:284
+#: ../menusplus.php:323
+#: ../menusplus.php:468
+#: ../menusplus.php:507
+msgid "Children"
+msgstr "Enfant"
+
+#: ../menusplus.php:287
+#: ../menusplus.php:326
+#: ../menusplus.php:471
+#: ../menusplus.php:510
+msgid "Yes"
+msgstr "Oui"
+
+#: ../menusplus.php:290
+#: ../menusplus.php:329
+#: ../menusplus.php:474
+#: ../menusplus.php:513
+msgid "No"
+msgstr "Non"
+
+#: ../menusplus.php:295
+#: ../menusplus.php:334
+#: ../menusplus.php:479
+#: ../menusplus.php:518
+msgid "Child Order"
+msgstr "Ordre des enfants"
+
+#: ../menusplus.php:298
+#: ../menusplus.php:482
+msgid "Name"
+msgstr "Nom"
+
+#: ../menusplus.php:299
+#: ../menusplus.php:340
+#: ../menusplus.php:483
+#: ../menusplus.php:524
+msgid "ID"
+msgstr "ID"
+
+#: ../menusplus.php:300
+#: ../menusplus.php:484
+msgid "Count"
+msgstr "Compte"
+
+#: ../menusplus.php:301
+#: ../menusplus.php:342
+#: ../menusplus.php:485
+#: ../menusplus.php:526
+msgid "Slug"
+msgstr "Permalien"
+
+#: ../menusplus.php:302
+#: ../menusplus.php:486
+msgid "Term Group"
+msgstr "Groupe"
+
+#: ../menusplus.php:337
+#: ../menusplus.php:521
+#: ../menusplus.php:602
+#: ../menusplus.php:638
+msgid "Title"
+msgstr "Titre"
+
+#: ../menusplus.php:338
+#: ../menusplus.php:522
+msgid "Date"
+msgstr "Date"
+
+#: ../menusplus.php:339
+#: ../menusplus.php:523
+msgid "Date Modified"
+msgstr "Date de modification"
+
+#: ../menusplus.php:341
+#: ../menusplus.php:525
+msgid "Author"
+msgstr "Auteur"
+
+#: ../menusplus.php:343
+#: ../menusplus.php:527
+msgid "Page Order"
+msgstr "Ordre des pages"
+
+#: ../menusplus.php:378
+#: ../menusplus.php:562
+msgid "Target"
+msgstr "Cible"
+
+#: ../menusplus.php:381
+#: ../menusplus.php:565
+msgid "Same window"
+msgstr "Même fenêtre"
+
+#: ../menusplus.php:382
+#: ../menusplus.php:566
+msgid "New window"
+msgstr "Nouvelle fenêtre"
+
+#: ../menusplus.php:396
+#: ../menusplus.php:608
+msgid "Add"
+msgstr "Ajouter"
+
+#: ../menusplus.php:397
+#: ../menusplus.php:582
+#: ../menusplus.php:609
+#: ../menusplus.php:645
+#: ../menusplus.php:675
+msgid "Cancel"
+msgstr "Annuler"
+
+#: ../menusplus.php:581
+#: ../menusplus.php:644
+msgid "Update"
+msgstr "Mettre à jour"
+
+#: ../menusplus.php:672
+msgid "Are you sure you want to delete the menu"
+msgstr "Êtes-vous sûr de supprimer le menu"
+
+#: ../menusplus.php:674
+#: ../menusplus.php:1196
+msgid "Delete"
+msgstr "Supprimer"
+
+#: ../menusplus.php:832
+#: ../menusplus.php:884
+msgid "You must enter a valid URL."
+msgstr "Vous devez saisir une adresse Web valide."
+
+#: ../menusplus.php:837
+#: ../menusplus.php:889
+msgid "You must enter a label."
+msgstr "Vous devez saisir un label"
+
+#: ../menusplus.php:957
+msgid "You must enter a title."
+msgstr "Vous devez saisi un titre"
+
+#: ../menusplus.php:1008
+msgid "You cannot delete your only menu."
+msgstr "Vous ne pouvez pas supprimer votre propre menu."
+
+#: ../menusplus.php:1193
+msgid "Edit"
+msgstr "Modifier"
+
+#: ../menusplus.php:1580
+msgid "Title:"
+msgstr "Title :"
+
+#: ../menusplus.php:1589
+msgid "Menu:"
+msgstr "Menu :"
+
+#~ msgid "Default"
+#~ msgstr "Menu par défaut"
+
+#~ msgid "Remove"
+#~ msgstr "Supprimer"

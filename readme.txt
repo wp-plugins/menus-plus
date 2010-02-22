@@ -2,7 +2,7 @@
 Contributors: keighl
 Donate link: http://www.keighl.com/plugins/menus-plus/
 Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation, posts
-Requires at least: 2.8
+Requires at least: 2.5
 Tested up to: 2.9
 Stable tag: trunk
 
@@ -28,7 +28,9 @@ Create multiple customized menus with pages, posts, categories, and URLS. For CM
 1. Create as many lists as you want!
 1. Dedicated 'Home Page' option
 1. Optional `class` assignment for external URLs
+1. Supports 'My Page Order' and 'My Category Order'
 1. Fun to drag and drop!
+
 
 = Support = 
 
@@ -67,6 +69,11 @@ The widget will display a title only if you supply one. If the list is going to 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.7 =
+* Fixed some bugs regarding page children sorting
+* Added support for 'My Page Order' and 'My Category Order'
+* Added French language support ... Thank you, [Denis Rebaud](http://rebaud.fr/fr/index.html "Denis Rebaud")!
 
 = 1.6 =
 * Add posts to the menu
