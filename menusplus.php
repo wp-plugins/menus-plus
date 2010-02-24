@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.5
+Version: 1.8
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -32,6 +32,8 @@ class MenusPlus {
 
 	function MenusPlus() {
 		
+		load_plugin_textdomain('menus_plus', false, 'menus-plus/languages');
+		
 		register_activation_hook(__FILE__, array(&$this, 'install'));
 		
 		add_action('admin_menu', array(&$this, 'add_admin'));
@@ -43,9 +45,15 @@ class MenusPlus {
 		add_action('wp_ajax_menusplus_add_dialog', array(&$this, 'add_dialog'));
 		add_action('wp_ajax_menusplus_edit_dialog', array(&$this, 'edit_dialog'));
 		add_action('wp_ajax_menusplus_add', array(&$this, 'add'));
+		add_action('wp_ajax_menusplus_validate', array(&$this, 'validate'));
 		add_action('wp_ajax_menusplus_edit', array(&$this, 'edit'));
 		add_action('wp_ajax_menusplus_sort', array(&$this, 'sort'));
 		add_action('wp_ajax_menusplus_remove', array(&$this, 'remove'));
+		add_action('wp_ajax_menusplus_remove_hybrid_dialog', array(&$this, 'remove_hybrid_dialog'));
+		add_action('wp_ajax_menusplus_edit_hybrid_dialog', array(&$this, 'edit_hybrid_dialog'));
+		add_action('wp_ajax_menusplus_edit_hybrid', array(&$this, 'edit_hybrid'));
+		add_action('wp_ajax_menusplus_remove_hybrid', array(&$this, 'remove_hybrid'));
+		
 		
 		add_action('wp_ajax_menusplus_menu_title', array(&$this, 'menu_title'));
 		add_action('wp_ajax_menusplus_menus_dropdown', array(&$this, 'menus_dropdown'));
@@ -70,15 +78,14 @@ class MenusPlus {
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
 		$menus_table = $wpdb->prefix . "menusplus_menus";
-		$wpdb->show_errors();
 
 		require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
-		// Does the menu items table exist?
+		// Items Table
 		
-		$exists = $wpdb->query("SELECT * FROM '$items_table'");
+		$exists = $wpdb->query("SELECT * FROM $items_table");
 
-		if(!$exists) :
+		if (!$exists) :
 
 			$sql = "CREATE TABLE " . $items_table . " (
 				id int NOT NULL AUTO_INCREMENT,
@@ -92,6 +99,7 @@ class MenusPlus {
 				children_order text NULL,
 				children_order_dir text NULL,
 				menu_id int DEFAULT '1' NOT NULL,
+				target text NULL,
 				PRIMARY  KEY id (id)
 				);";
 
@@ -99,43 +107,82 @@ class MenusPlus {
 
 		else :
 		
-			$sql = "ALTER TABLE " . $items_table . " (
-				ADD UNIQUE id int NOT NULL AUTO_INCREMENT,
-				ADD UNIQUE wp_id int NULL,
-				ADD UNIQUE list_order int DEFAULT '0' NOT NULL, 
-				ADD UNIQUE type text NOT NULL,
-				ADD UNIQUE class text NULL,
-				ADD UNIQUE url text NULL,
-				ADD UNIQUE label text NULL,
-				ADD UNIQUE children text NULL,
-				ADD UNIQUE children_order text NULL,
-				ADD UNIQUE children_order_dir text NULL,
-				ADD UNIQUE menu_id int DEFAULT '1' NOT NULL,				
-				);";
+			$fields = array(
+				array(
+					"column" => "wp_id",
+					"meta"   => "int NULL"
+				),
+				array(
+					"column" => "list_order",
+					"meta"   => "int DEFAULT '0' NOT NULL"
+				),
+				array(
+					"column" => "type",
+					"meta"   => "text NOT NULL"
+				),
+				array(
+					"column" => "class",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "url",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "label",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "children",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "children_order",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "children_order_dir",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "menu_id",
+					"meta"   => "int DEFAULT '1' NOT NULL"
+				),
+				array(
+					"column" => "target",
+					"meta"   => "text NULL"
+				)
+			);
 
-			dbDelta($sql);
+			foreach ($fields as $field) :
+
+				$check = $wpdb->query("SELECT " . $field['column'] . " FROM " . $items_table);
+				if (!$check) {
+					$sql = $wpdb->query("ALTER TABLE $items_table ADD " . $field['column'] . " " . $field['meta']);
+					if ($sql) 
+						echo "added" . $field['column'] . "<br/>";
+				}
+
+			endforeach;
 
 		endif;
 		
-		// Does the menus table exist?
+		// Menus Table
 				
-		$exists = $wpdb->query("SELECT * FROM '$menus_table'");
+		$exists = $wpdb->query("SELECT * FROM $menus_table");
 
-		if(!$exists) :
-
-			// Create the db.
+		if (!$exists) :
 			
 			$sql = "CREATE TABLE " . $menus_table . " (
 				id int NOT NULL AUTO_INCREMENT,
+				parent_id int NULL,
 				menu_title text NULL,
 				menus_description text NULL,
 				PRIMARY  KEY id (id)
 				);";
 
 			dbDelta($sql);
-			
-			// Setup a default menu
-			
+						
 			$default_title = 'Default';
 			
 			$data_array = array(
@@ -143,10 +190,36 @@ class MenusPlus {
 			);
 			
 			$wpdb->insert($menus_table, $data_array );
+			
+		else :
+		
+			$fields = array(
+				array(
+					"column" => "parent_id",
+					"meta"   => "int NULL"
+				),
+				array(
+					"column" => "menu_title",
+					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "menus_description",
+					"meta"   => "text NULL"
+				),
+			);
+
+			foreach ($fields as $field) :
+
+				$check = $wpdb->query("SELECT " . $field['column'] . " FROM " . $menus_table);
+				if (!$check) {
+					$sql = $wpdb->query("ALTER TABLE $menus_table ADD " . $field['column'] . " " . $field['meta']);
+				}
+
+			endforeach;
 
 		endif;
 		
-		$mp_version = "1.5";
+		$mp_version = "1.8";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -179,15 +252,15 @@ class MenusPlus {
 	// Views
 	
 	function admin() {
-
-		// make a funciton to retrieve
-		$menu_id_from_get = $_GET['menu_id'];
 		
+		$menu_id_from_get = $_GET['menu_id'];
 		$menu_id = $this->get_menu_id($menu_id_from_get); 
-				
-		$this->js($menu_id);
+	
+		$parent = $this->menu_has_parent($menu_id);
+		
+		$this->js($menu_id, $parent);
 		$this->style();
-			
+	
 		?> 
 
 		<div class="wrap mp_margin_bottom">
@@ -195,38 +268,59 @@ class MenusPlus {
 		</div>
 		<div class="wrap mp_margin_bottom">
 			<div class="mp_buttons_left">
-				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=cat&width=350&height=250" title="<?php _e("Add a Category"); ?>"><?php _e("Add Category"); ?></a>
-				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=page&width=350&height=250" title="<?php _e("Add a Page"); ?>"><?php _e("Add Page"); ?></a>
-				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=url&width=350&height=250" title="<?php _e("Add a URL"); ?>"><?php _e("Add URL"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=home&width=350&height=250" title="<?php _e("Add Home Page"); ?>"><?php _e("Home"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=cat&width=350&height=250" title="<?php _e("Add a Category"); ?>"><?php _e("Category"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=page&width=350&height=250" title="<?php _e("Add a Page"); ?>"><?php _e("Page"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=post&width=350&height=250" title="<?php _e("Add a Post"); ?>"><?php _e("Post"); ?></a>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=url&width=350&height=250" title="<?php _e("Add a URL"); ?>"><?php _e("URL"); ?></a>
+				<?php if (!$parent):?>
+				<a class="thickbox button" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_dialog&type=hybrid&width=350&height=250" title="<?php _e("Add a Hybrid Menu"); ?>"><?php _e("Hybrid Menu"); ?></a>
+				<?php endif; ?>
 			</div>
 			<div class="mp_buttons_right">
-				<span class="mp_menu_title"></span> |
-				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("New Menu"); ?>">
+				
+				<span class="mp_menu_title"></span> 
+
+				<select class="mp_switch_menu">
+				</select>
+				
+				<?php if (!$parent):?>
+				
+				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("Edit Menu"); ?>">
 					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" />
 				</a>
 				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_remove_menu_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=100" title="<?php _e("Delete Menu"); ?>">
 					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/remove.png" />
 				</a>
-				|
-				<select class="mp_switch_menu">
-				</select>
-				|
+				
+				<?php endif; ?>
+				
+				<?php if ($parent) : ?>
+					
+					<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_hybrid_dialog&menu_id=<?php echo $menu_id; ?>&width=350&height=350" title="<?php _e("Edit Hybrid Menu"); ?>">
+						<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" />
+					</a>
+					
+				<?php endif; ?>
+				
 				<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_add_new_menu_dialog&width=350&height=100" title="<?php _e("New Menu"); ?>">
 					<img src="<?php echo plugin_dir_url( __FILE__ );?>images/add.png" />
 				</a>
-				
 				
 			</div>
 			<div class="clear_list_floats"></div>
 		</div>
 		<div class="wrap postbox" id="menusplus_list">
-			<ul></ul>
+			<ul <?php if ($parent) { echo 'class="parent_menu_box"'; } ?> ></ul>
 		</div>
-		<div class="wrap">
-			<p><?php _e('Template Tag') ?>:
-        	<input class="mp_template_tag" value="&lt;?php menusplus(<?php echo $menu_id; ?>); ?&gt;" />
-			<a href="http://www.keighl.com/plugins/menus-plus/"><?php _e('Docs') ?></a></p>
-		</div>
+		
+		<?php if (!$parent) : ?>
+			<div class="wrap">
+				<p><?php _e('Template Tag') ?>:
+	        	<input class="mp_template_tag" value="&lt;?php menusplus(<?php echo $menu_id; ?>); ?&gt;" />
+				<a href="http://www.keighl.com/plugins/menus-plus/"><?php _e('Docs') ?></a></p>
+			</div>
+		<?php endif; ?>
 					
 	 	<?php 
 
@@ -241,41 +335,30 @@ class MenusPlus {
 		?>
 		<div class="mp_add">
 			<table cellspacing="16" cellpadding="0">
-				<?php if ($type != "url") : ?>
-					<tr>
-						<td>
-							<div align="right">
-								<?php if ($type == "cat") { echo _e("Category"); } ?>
-								<?php if ($type == "page") { echo _e("Page"); } ?>
-							</div>
-						</td>
-						<td>
-							<?php 
-								if ($type == "cat") :
-									wp_dropdown_categories("hide_empty=0&name=add_wpid");
-								elseif ($type == "page") :
-									wp_dropdown_pages("name=add_wpid");
-								else :
-						
-								endif;
-							?>
-						</td>
-					</tr>
-				<?php else : ?>
+				<?php if ($type == "home") : ?>
 					<tr>
 						<td><div align="right"><?php _e("URL"); ?></div></td>
-						<td><input class="add_url" value="" /></td>
+						<td><span class="mp_home_url"><? bloginfo('siteurl'); ?></span></td>
 					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Label"); ?></div></td>
-						<td><input class="add_label" value="" /></td>
+						<td><input class="add_label widefat" value="<?php _e('Home'); ?>" /></td>
 					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Class"); ?></div></td>
-						<td><input class="add_class" value="" /></td>
+						<td><input class="add_class widefat" value="" /></td>
 					</tr>
-				<?php endif; ?>
-				<?php if ($type != "url") : ?>
+				<?php elseif ($type == "cat") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php echo _e("Category"); ?>
+							</div>
+						</td>
+						<td>
+							<?php wp_dropdown_categories("hide_empty=0&name=add_wpid"); ?>
+						</td>
+					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Children"); ?></div></td>
 						<td>
@@ -290,30 +373,116 @@ class MenusPlus {
 					<tr id="children_order_box">
 						<td><div align="right"><?php _e("Child Order"); ?></div></td>
 						<td>
-							<?php if ($type == 'cat') : ?>
-								<select class="add_children_order">
-									<option value="name"><?php _e("Name"); ?></option>
-									<option value="ID"><?php _e("ID"); ?></option>
-									<option value="count"><?php _e("Count"); ?></option>
-									<option value="slug"><?php _e("Slug"); ?></option>
-									<option value="term_group"><?php _e("Term Group"); ?></option>
-								</select>
-							<?php elseif ($type == 'page') : ?>
-								<select class="add_children_order">
-									<option value="post_title"><?php _e("Title"); ?></option>
-									<option value="post_date"><?php _e("Date"); ?></option>
-									<option value="post_modified"><?php _e("Date Modified"); ?></option>
-									<option value="ID"><?php _e("ID"); ?></option>
-									<option value="post_author"><?php _e("Author"); ?></option>
-									<option value="post_name"><?php _e("Slug"); ?></option>
-								</select>
-							<?php endif; ?>
+							<select class="add_children_order">
+								<option value="name"><?php _e("Name"); ?></option>
+								<option value="ID"><?php _e("ID"); ?></option>
+								<option value="count"><?php _e("Count"); ?></option>
+								<option value="slug"><?php _e("Slug"); ?></option>
+								<option value="term_group"><?php _e("Term Group"); ?></option>
+								<?php
+									if ( function_exists('mycategoryorder') ) :
+										echo '<option value="order">' . _('My Category Order') . '</option>';
+									endif;
+								?>
+							</select>
 							<select class="add_children_order_dir">
 								<option value="ASC">ASC</option>
 								<option value="DESC">DESC</option>
 							</select>
 	                    </td>
 				    </tr>
+				<?php elseif ($type == "page") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php echo _e("Page"); ?>
+							</div>
+						</td>
+						<td>
+							<?php wp_dropdown_pages("name=add_wpid"); ?>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Children"); ?></div></td>
+						<td>
+	                        <label>
+	                        	<input type="radio" name="add_children" value="true" /> <?php _e("Yes"); ?>
+	                        </label>
+							<label>
+	                        	<input type="radio" name="add_children" value="false" checked="checked" /> <?php _e("No"); ?>
+	                        </label>
+	                    </td>
+				    </tr>
+					<tr id="children_order_box">
+						<td><div align="right"><?php _e("Child Order"); ?></div></td>
+						<td>
+							<select class="add_children_order">
+								<option value="post_title"><?php _e("Title"); ?></option>
+								<option value="post_date"><?php _e("Date"); ?></option>
+								<option value="post_modified"><?php _e("Date Modified"); ?></option>
+								<option value="ID"><?php _e("ID"); ?></option>
+								<option value="post_author"><?php _e("Author"); ?></option>
+								<option value="post_name"><?php _e("Slug"); ?></option>
+								<?php
+									if ( function_exists('mypageorder') ) :
+										echo '<option value="menu_order">' . _('My Page Order') . '</option>';
+									endif;
+								?>
+							</select>
+							<select class="add_children_order_dir">
+								<option value="ASC">ASC</option>
+								<option value="DESC">DESC</option>
+							</select>
+	                    </td>
+				    </tr>
+				<?php elseif ($type == "post") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php echo _e("Post"); ?>
+							</div>
+						</td>
+						<td>
+							<select name="add_wpid">
+								<?php $this->mp_dropdown_posts(); ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Class"); ?></div></td>
+						<td><input class="add_class widefat" value="" /></td>
+					</tr>
+				<?php elseif ($type == "url") : ?>
+					<tr>
+						<td><div align="right"><?php _e("URL"); ?></div></td>
+						<td><input class="add_url widefat" value="http://" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Label"); ?></div></td>
+						<td><input class="add_label widefat" value="" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Target"); ?></div></td>
+						<td>
+							<select class="add_target">
+								<option value="_parent" selected="selected"><?php _e('Same window'); ?></option>
+								<option value="_blank"><?php _e('New window'); ?></option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Class"); ?></div></td>
+						<td><input class="add_class widefat" value="" /></td>
+					</tr>
+				<?php elseif ($type == "hybrid") : ?>
+					<tr>
+						<td><div align="right"><?php _e("Label"); ?></div></td>
+						<td><input class="add_label widefat" value="" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Class"); ?></div></td>
+						<td><input class="add_class widefat" value="" /></td>
+					</tr>
 				<?php endif; ?>
 				<tr>
 					<td><div align="right"></div></td>
@@ -357,6 +526,7 @@ class MenusPlus {
 				$children_order_dir = $meta['children_order_dir'];
 				$list_order = $meta['list_order'];
 				$menu_id = $meta['menu_id'];
+				$target = $meta['target'];
 			endforeach;
 		endif;
 		
@@ -364,41 +534,30 @@ class MenusPlus {
 		<div class="mp_edit">
 			<input  type="hidden" value="<?php _e($type); ?>" class="edit_type" />
 			<table cellspacing="16" cellpadding="0">
-				<?php if ($type != "url") : ?>
-					<tr>
-						<td>
-							<div align="right">
-								<?php if ($type == "cat") { _e("Category"); } ?>
-								<?php if ($type == "page") { _e("Page"); } ?>
-							</div>
-						</td>
-						<td>
-							<?php 
-								if ($type == "cat") :
-									wp_dropdown_categories("hide_empty=0&name=edit_wpid&selected=$wp_id");
-								elseif ($type == "page") :
-									wp_dropdown_pages("name=edit_wpid&selected=$wp_id");
-								else :
-						
-								endif;
-							?>
-						</td>
-					</tr>
-				<?php else : ?>
+				<?php if ($type == "home") : ?>
 					<tr>
 						<td><div align="right"><?php _e("URL"); ?></div></td>
-						<td><input class="edit_url" value="<?php echo $url; ?>" /></td>
+						<td><span class="mp_home_url"><? bloginfo('siteurl'); ?></span></td>
 					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Label"); ?></div></td>
-						<td><input class="edit_label" value="<?php echo $label; ?>" /></td>
+						<td><input class="edit_label widefat" value="<?php echo $label; ?>" /></td>
 					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Class"); ?></div></td>
-						<td><input class="edit_class" value="<?php echo $class; ?>" /></td>
+						<td><input class="edit_class widefat" value="<?php echo $class; ?>" /></td>
 					</tr>
-				<?php endif ;?>
-				<?php if ($type != "url") : ?>
+				<?php elseif ($type == "cat") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php _e("Category"); ?>
+							</div>
+						</td>
+						<td>
+							<?php wp_dropdown_categories("hide_empty=0&name=edit_wpid&selected=$wp_id"); ?>
+						</td>
+					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Children"); ?></div></td>
 						<td>
@@ -413,31 +572,108 @@ class MenusPlus {
 					<tr id="children_order_box">
 						<td><div align="right"><?php _e("Child Order"); ?></div></td>
 						<td>
-							<?php if ($type == 'cat') : ?>
-								<select class="edit_children_order">
-									<option value="name" <?php if ($children_order == "name") : ?> selected="selected" <?php endif; ?> ><?php _e("Name"); ?></option>
-									<option value="ID" <?php if ($children_order == "ID") : ?> selected="selected" <?php endif; ?> ><?php _e("ID"); ?></option>
-									<option value="count" <?php if ($children_order == "count") : ?> selected="selected" <?php endif; ?> ><?php _e("Count"); ?></option>
-									<option value="slug" <?php if ($children_order == "slug") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
-									<option value="term_group" <?php if ($children_order == "term_group") : ?> selected="selected" <?php endif; ?> ><?php _e("Term Group"); ?></option>
-								</select>
-							<?php elseif ($type == 'page') : ?>
-								<select class="edit_children_order">
-									<option value="post_title" <?php if ($children_order == "post_title") : ?> selected="selected" <?php endif; ?> ><?php _e("Title"); ?></option>
-									<option value="post_date" <?php if ($children_order == "post_date") : ?> selected="selected" <?php endif; ?> ><?php _e("Date"); ?></option>
-									<option value="post_modified" <?php if ($children_order == "post_modified") : ?> selected="selected" <?php endif; ?> ><?php _e("Date Modified"); ?></option>
-									<option value="ID" <?php if ($children_order == "ID") : ?> selected="selected" <?php endif; ?> ><?php _e("ID"); ?></option>
-									<option value="post_author" <?php if ($children_order == "post_author") : ?> selected="selected" <?php endif; ?> ><?php _e("Author"); ?></option>
-									<option value="post_name" <?php if ($children_order == "post_name") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
-								</select>
-							<?php endif; ?>
+							<select class="edit_children_order">
+								<option value="name" <?php if ($children_order == "name") : ?> selected="selected" <?php endif; ?> ><?php _e("Name"); ?></option>
+								<option value="ID" <?php if ($children_order == "ID") : ?> selected="selected" <?php endif; ?> ><?php _e("ID"); ?></option>
+								<option value="count" <?php if ($children_order == "count") : ?> selected="selected" <?php endif; ?> ><?php _e("Count"); ?></option>
+								<option value="slug" <?php if ($children_order == "slug") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
+								<option value="term_group" <?php if ($children_order == "term_group") : ?> selected="selected" <?php endif; ?> ><?php _e("Term Group"); ?></option>
+								<?php if ( function_exists('mycategoryorder') ) : ?>
+									<option value="order" <?php if ($children_order == "order") : ?> selected="selected" <?php endif; ?> ><?php _e("My Category Order"); ?></option>	
+								<?php endif; ?>
+							</select>
 							<select class="edit_children_order_dir">
 								<option value="ASC" <?php if ($children_order_dir == "ASC") : ?> selected="selected" <?php endif; ?> >ASC</option>
 								<option value="DESC" <?php if ($children_order_dir == "DESC") : ?> selected="selected" <?php endif; ?> >DESC</option>
 							</select>
 	                    </td>
 				    </tr>
+				<?php elseif ($type == "page") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php _e("Page"); ?>
+							</div>
+						</td>
+						<td>
+							<?php wp_dropdown_pages("name=edit_wpid&selected=$wp_id"); ?>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Children"); ?></div></td>
+						<td>
+	                        <label>
+	                        	<input type="radio" name="edit_children" value="true" <?php if ($children == "true") : ?> checked="checked" <?php endif; ?> /> <?php _e("Yes"); ?>
+	                        </label>
+							<label>
+	                        	<input type="radio" name="edit_children" value="false" <?php if ($children == "false") : ?> checked="checked" <?php endif; ?> /> <?php _e("No"); ?>
+	                        </label>
+	                    </td>
+				    </tr>
+					<tr id="children_order_box">
+						<td><div align="right"><?php _e("Child Order"); ?></div></td>
+						<td>
+							<select class="edit_children_order">
+								<option value="post_title" <?php if ($children_order == "post_title") : ?> selected="selected" <?php endif; ?> ><?php _e("Title"); ?></option>
+								<option value="post_date" <?php if ($children_order == "post_date") : ?> selected="selected" <?php endif; ?> ><?php _e("Date"); ?></option>
+								<option value="post_modified" <?php if ($children_order == "post_modified") : ?> selected="selected" <?php endif; ?> ><?php _e("Date Modified"); ?></option>
+								<option value="ID" <?php if ($children_order == "ID") : ?> selected="selected" <?php endif; ?> ><?php _e("ID"); ?></option>
+								<option value="post_author" <?php if ($children_order == "post_author") : ?> selected="selected" <?php endif; ?> ><?php _e("Author"); ?></option>
+								<option value="post_name" <?php if ($children_order == "post_name") : ?> selected="selected" <?php endif; ?> ><?php _e("Slug"); ?></option>
+								<?php if ( function_exists('mypageorder') ) : ?>
+									<option value="menu_order" <?php if ($children_order == "menu_order") : ?> selected="selected" <?php endif; ?> ><?php _e("My Page Order"); ?></option>	
+								<?php endif; ?>
+							</select>
+							<select class="edit_children_order_dir">
+								<option value="ASC" <?php if ($children_order_dir == "ASC") : ?> selected="selected" <?php endif; ?> >ASC</option>
+								<option value="DESC" <?php if ($children_order_dir == "DESC") : ?> selected="selected" <?php endif; ?> >DESC</option>
+							</select>
+	                    </td>
+				    </tr>
+				<?php elseif ($type == "post") : ?>
+					<tr>
+						<td>
+							<div align="right">
+								<?php echo _e("Post"); ?>
+							</div>
+						</td>
+						<td>
+							<select name="edit_wpid">
+								<?php $this->mp_dropdown_posts($wp_id); ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Class"); ?></div></td>
+						<td><input class="edit_class widefat" value="<?php echo $class; ?>" /></td>
+					</tr>
+				<?php elseif ($type == "url") : ?>
+					<tr>
+						<td><div align="right"><?php _e("URL"); ?></div></td>
+						<td><input class="edit_url widefat" value="<?php echo $url; ?>" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Label"); ?></div></td>
+						<td><input class="edit_label widefat" value="<?php echo $label; ?>" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Target"); ?></div></td>
+						<td>
+							<select class="edit_target">
+								<option value="_parent" <?php if ($target == "_parent") : ?> selected="selected" <?php endif; ?> ><?php _e('Same window'); ?></option>
+								<option value="_blank" <?php if ($target == "_blank") : ?> selected="selected" <?php endif; ?> ><?php _e('New window'); ?></option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("Class"); ?></div></td>
+						<td><input class="edit_class widefat" value="<?php echo $class; ?>" /></td>
+					</tr>
+							
+				<?php else : ?>
+					
 				<?php endif; ?>
+			
 				<tr>
 					<td><div align="right"></div></td>
 					<td>
@@ -446,6 +682,7 @@ class MenusPlus {
 					</td>
 				</tr>
 			</table>
+			
 		</div>
 		
 		<?php
@@ -462,7 +699,7 @@ class MenusPlus {
 			<table cellspacing="16" cellpadding="0">
 				<tr>
 					<td><div align="right"><?php _e("Title"); ?></div></td>
-					<td><input class="new_menu_title" value="" /></td>
+					<td><input class="new_menu_title widefat" value="" /></td>
 				</tr>
 				<tr>
 					<td><div align="right"></div></td>
@@ -498,7 +735,7 @@ class MenusPlus {
 			<table cellspacing="16" cellpadding="0">
 				<tr>
 					<td><div align="right"><?php _e("Title"); ?></div></td>
-					<td><input class="edit_menu_title" value="<?php echo $title; ?>" /></td>
+					<td><input class="edit_menu_title widefat" value="<?php echo $title; ?>" /></td>
 				</tr>
 				<tr>
 					<td><div align="right"></div></td>
@@ -531,7 +768,7 @@ class MenusPlus {
 		?>
 		
 		<div class="remove_menu">
-			<p><?php _e("Are you sure you want to delete the menu, <strong>$title</strong>?"); ?></p>
+			<p><?php _e("Are you sure you want to delete the menu <strong>$title</strong>, and all menus beneath it?"); ?></p>
 			<p>
 				<a class="button" id="remove_menu_submit" rel="<?php echo $type; ?>"><?php _e("Delete"); ?></a>
 				<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
@@ -542,6 +779,77 @@ class MenusPlus {
 		
 		exit();
 		
+	}
+	
+	function edit_hybrid_dialog() {
+		
+		$id = $_GET['menu_id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$items_table = $wpdb->prefix . "menusplus";
+		$wpdb->show_errors();
+
+		$menu = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $id", OBJECT );
+		$item = $wpdb->get_row("SELECT * FROM $items_table WHERE wp_id = $id", OBJECT );
+		
+		$title = $menu->menu_title;
+		$class = $item->class;
+		
+		?>
+		<div class="mp_edit_hybrid">
+		<table cellspacing="16" cellpadding="0">
+			<tr>
+				<td><div align="right"><?php _e("Label"); ?></div></td>
+				<td><input class="edit_hybrid_label widefat" value="<?php echo $title; ?>" /></td>
+			</tr>
+			<tr>
+				<td><div align="right"><?php _e("Class"); ?></div></td>
+				<td><input class="edit_hybrid_class widefat" value="<?php echo $class; ?>" /></td>
+			</tr>
+			<tr>
+				<td><div align="right"></div></td>
+				<td>
+					<a class="button" id="edit_hybrid_submit" rel="<?php echo $id; ?>"><?php _e("Update"); ?></a>
+					<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
+				</td>
+			</tr>
+		</table>
+		</div>
+		
+		<?php
+		
+		exit();
+		
+	}
+	
+	function remove_hybrid_dialog() {
+		
+		$menu_id = $_GET['menu_id'];
+		$id = $_GET['id'];
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$items_table = $wpdb->prefix . "menusplus";
+		$wpdb->show_errors();
+
+		$menus = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
+		
+		$title = $menus['menu_title'];
+		
+		?>
+		
+		<div class="remove_menu">
+			<p><?php _e("Are you sure you want to delete <strong>$title</strong>? All other menus and items beneath it will be deleted as well."); ?></p>
+			<p>
+				<a class="button" id="remove_hybrid_submit" rel="<?php echo $id; ?>"><?php _e("Delete"); ?></a>
+				<a class="button" id="mp_cancel"><?php _e("Cancel"); ?></a>
+			</p>
+		</div>
+		
+		<?php
+		
+		exit();
 	}
 	
 	function style() { ?>
@@ -572,7 +880,7 @@ class MenusPlus {
 			
 			.mp_buttons_right {
 				float:right;
-				margin-right:10px;
+				margin-right:20px;
 			}
 			
 				.mp_buttons_right img {
@@ -600,27 +908,39 @@ class MenusPlus {
 					margin-bottom:6px;
 				}
 				
+				#menusplus_list ul.parent_menu_box li {
+					background-color:#e35f00;
+				}
 				
 				
-					.list_item_title {
+				
+					.list_item_left {
 						float:left;
-						font-size:1.5em;
-						font-weight:bold;
-						color:#ffffff;
 					}
 					
-					.list_item_meta {
+						.list_item_left .list_item_title {
+							font-size:1.5em;
+							font-weight:bold;
+							color:#ffffff;
+						}
+					
+					
+					.list_item_right {
 						float:right;
 					}
 					
-						.list_item_meta a:link, .list_item_meta a:visited {
+						.list_item_type {
+							color:#fff;
+						}
+					
+						.list_item_right a:link, .list_item_right a:visited {
 							color:#ffffff;
 							margin-left:6px;
 							text-decoration:none;
 						}
 						
-						.list_item_meta a.mp_remove {
-							color:#0f3546;
+						.list_item_right a.mp_remove {
+							color:#ffa3a3;
 							cursor:pointer;
 							margin-left:6px;
 						}
@@ -629,9 +949,19 @@ class MenusPlus {
 						clear: both;
 					}
 				
+				.mp_validate {
+					background-color:#c0402a;
+					color:#fff;
+				}
 				
+				.mp_home_url {
+					color:#21759b;
+				}
+				
+				.mp_in_order_to {
+					color:#21759b;
+				}
 			
-
 		</style>
 
 	<?php
@@ -663,11 +993,13 @@ class MenusPlus {
 						var children = $("input[name='add_children']:checked").val();
 						var children_order = $('select.add_children_order').val();
 						var children_order_dir = $('select.add_children_order_dir').val();
+						var target = $('select.add_target').val();
 						
+						// Validate
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
-								action:"menusplus_add", 
+								action:"menusplus_validate", 
 								type:type,
 								wp_id:wp_id,
 								children:children,
@@ -676,25 +1008,50 @@ class MenusPlus {
 								opt_class:opt_class,
 								label:label,
 								url:url,
-								menu_id : <?php echo $menu_id; ?>
+								menu_id:<?php echo $menu_id; ?>,
+								target:target
 							},
 							function(str) {
+								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// URL issue
 									alert('<?php _e('You must enter a valid URL.'); ?>');
-									$('input.add_url').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
-								}
-								if (str == "2") {
+									$('input.add_url').addClass('mp_validate');
+								} else if (str == "2") {
 									// Label issue
 									alert('<?php _e('You must enter a label.'); ?>');
-									$('input.add_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
-								} 
-								if (str == "") {
-									tb_remove();
-									menusplus_list(<?php echo $menu_id; ?>);
+									$('input.add_label').addClass('mp_validate');
+							 	} else {
+									// Insert
+									$.post(
+										"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+										{
+											action:"menusplus_add", 
+											type:type,
+											wp_id:wp_id,
+											children:children,
+											children_order:children_order,
+											children_order_dir:children_order_dir,
+											opt_class:opt_class,
+											label:label,
+											url:url,
+											menu_id : <?php echo $menu_id; ?>,
+											target : target
+										},
+										function(str) {
+											$('input').removeClass('mp_validate');
+											if (str == "") {
+												tb_remove();
+												menusplus_list(<?php echo $menu_id; ?>);
+											} else {
+												window.location.replace('themes.php?page=menusplus&menu_id=' + str);
+											}
+										}
+									);
 								}
 							}
 						);
+						
 					}
 				);
 				
@@ -712,11 +1069,13 @@ class MenusPlus {
 						var children = $("input[name='edit_children']:checked").val();
 						var children_order = $('select.edit_children_order').val();
 						var children_order_dir = $('select.edit_children_order_dir').val();
+						var target = $('select.edit_target').val();
 						
+						// Validate
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
-								action:"menusplus_edit", 
+								action:"menusplus_validate", 
 								id:id,
 								wp_id:wp_id,
 								children:children,
@@ -725,22 +1084,92 @@ class MenusPlus {
 								opt_class:opt_class,
 								label:label,
 								url:url,
-								type:type
+								type:type,
+								target : target
 							},
 							function(str) {
+								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// URL issue
 									alert('<?php _e('You must enter a valid URL.'); ?>');
-									$('input.edit_url').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
+									$('input.edit_url').addClass('mp_validate');
+								} else if (str == "2") {
+									// Label issue
+									alert('<?php _e('You must enter a label.'); ?>');
+									$('input.edit_label').addClass('mp_validate');
+							 	} else {
+									// Insert
+									$.post(
+										"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+										{
+											action:"menusplus_edit", 
+											id:id,
+											wp_id:wp_id,
+											children:children,
+											children_order:children_order,
+											children_order_dir:children_order_dir,
+											opt_class:opt_class,
+											label:label,
+											url:url,
+											type:type,
+											target : target
+										},
+										function(str) {
+											$('input').removeClass('mp_validate');
+											if (str == "") {
+												tb_remove();
+												menusplus_list(<?php echo $menu_id; ?>);
+											}
+										}
+									);
 								}
+							}
+						);
+					}
+				);
+				
+				// Edit Hybrid 
+				
+				$('.mp_edit_hybrid a#edit_hybrid_submit').live("click",
+					function () {
+						var menu_id = "<?php echo $menu_id; ?>";
+						var label = $('input.edit_hybrid_label').val();
+						var opt_class = $('input.edit_hybrid_class').val();
+						var type = "hybrid";
+						// Validate
+						$.post(
+							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+							{
+								action:"menusplus_validate", 
+								label:label,
+								type:type
+							},
+							function(str) {
+								$('input').removeClass('mp_validate');
 								if (str == "2") {
 									// Label issue
 									alert('<?php _e('You must enter a label.'); ?>');
-									$('input.edit_label').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
-								} 
-								if (str == "") {
-									tb_remove();
-									menusplus_list(<?php echo $menu_id; ?>);
+									$('input.edit_hybrid_label').addClass('mp_validate');
+							 	} else {
+									// Edit
+									$.post(
+										"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+										{
+											action:"menusplus_edit_hybrid", 
+											menu_id:menu_id,
+											opt_class:opt_class,
+											label:label,
+										},
+										function(str) {
+											$('input').removeClass('mp_validate');
+											if (str == "") {
+												tb_remove();
+												menu_title(<?php echo $menu_id; ?>);
+												menus_dropdown(<?php echo $menu_id; ?>);
+												menusplus_list(<?php echo $menu_id; ?>);
+											}
+										}
+									);
 								}
 							}
 						);
@@ -758,6 +1187,25 @@ class MenusPlus {
 							},
 							function(str) {
 								menusplus_list(<?php echo $menu_id; ?>);
+							}
+						);
+					}
+				);
+				
+				$("a#remove_hybrid_submit").live("click",
+					function () {
+						var id = $(this).attr("rel");
+						$.post(
+							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
+							{
+								action:"menusplus_remove_hybrid", 
+								id : id
+							},
+							function (str) {
+								tb_remove();
+								menusplus_list(<?php echo $menu_id; ?>);
+								menus_dropdown(<?php echo $menu_id; ?>);
+								menu_title(<?php echo $menu_id; ?>);
 							}
 						);
 					}
@@ -800,10 +1248,11 @@ class MenusPlus {
 								title : title
 							},
 							function(str) {
+								$('input').removeClass('mp_validate');
 								if (str == "empty") {
 									// Title issue
 									alert('<?php _e('You must enter a title.'); ?>');
-									$('input.new_menu_title').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
+									$('input.new_menu_title').addClass('mp_validate');
 								} else {
 									window.location.replace('themes.php?page=menusplus&menu_id=' + str);
 								}
@@ -823,10 +1272,11 @@ class MenusPlus {
 								menu_id : <?php echo $menu_id; ?>
 							},
 							function(str) {
+								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// Title issue
 									alert('You must enter a title.')
-									$('input.edit_menu_title').css({'background-color' : '#c0402a' , 'color' : '#ffffff'});
+									$('input.edit_menu_title').addClass('mp_validate');
 								} else {
 									tb_remove();
 									// Stays on the current menu for now. 
@@ -867,7 +1317,6 @@ class MenusPlus {
 					function () {
 						var menu_id = $('.mp_switch_menu').val();
 						window.location.replace('themes.php?page=menusplus&menu_id='+menu_id);
-						
 					}
 				);
 								
@@ -946,7 +1395,86 @@ class MenusPlus {
 		endif;
 		
 	}
+	
+	function menu_has_children($menu_id) {
 		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		// Does this menu have children?
+		
+		$children = $wpdb->get_results("SELECT * FROM $menus_table WHERE parent_id = $menu_id", ARRAY_A);
+		$children_a = array();
+
+		if (!$children) :
+			RETURN FALSE;
+		else :
+			foreach ($children as $child) :
+				$children_a[] = $child['id'];
+			endforeach;
+			RETURN $children_a;
+		endif;
+		
+	}
+	
+	function menu_has_parent($menu_id) {
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		// Does this menu have a parent?
+		
+		$menu = $wpdb->get_row("SELECT parent_id FROM $menus_table WHERE id = $menu_id", OBJECT);
+		
+		if (!$menu->parent_id) {
+			RETURN FALSE;
+		} else {
+			RETURN $menu->parent_id;
+		}
+		
+	}
+		
+	function menu_parent($menu_id){
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+				
+		$menu = $wpdb->get_row("SELECT parent_id FROM $menus_table WHERE id = $menu_id", OBJECT);
+		
+		if (!$menu->parent_id) {
+			RETURN FALSE;
+		} else {
+			$parent_id = $menu->parent_id;
+			$parent = $wpdb->get_row("SELECT menu_title FROM $menus_table WHERE id = $parent_id", OBJECT);
+			RETURN $parent->menu_title;
+		}
+		
+	}
+	
+	function menu_walker($menu_id){
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$parent = $this->menu_has_parent($menu_id); 
+		
+		if ($parent) :
+			$level = 0;
+			while ($parent) :
+				$parent = $this->menu_has_parent($parent);
+				$level++;
+			endwhile;
+			RETURN $level * 15 ."px";
+		else :
+			RETURN 0 . "px";
+		endif;
+		
+	}
+	
 	function menu_title() {
 		
 		$menu_id = $_POST['menu_id'];
@@ -955,10 +1483,15 @@ class MenusPlus {
 		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 		
-		$title = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
+		$menu = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $menu_id", ARRAY_A );
 		
-		echo $title['menu_title'];
+		$parent = $this->menu_has_parent($menu_id);
 		
+		if ($parent) :
+			echo $this->menu_parent($menu_id) . " : ";
+		else :
+			//echo $menu['menu_title'];
+		endif;
 		exit();
 		
 	}
@@ -971,19 +1504,37 @@ class MenusPlus {
 		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 		
-		$items = $wpdb->get_results("SELECT * FROM $menus_table ORDER BY id ASC", ARRAY_A );
+		$items = $wpdb->get_results("SELECT * FROM $menus_table WHERE parent_id is NULL ORDER BY menu_title ASC", ARRAY_A );
 		
 		if ($items) :
 		
 			foreach ($items as $item) :
+				
 				$id = $item['id'];
 				$title = $item['menu_title'];
-				$is_selected = ($item['id'] == $menu_id) ? 'selected="selected"' : '';
-				echo "<option value=\"$id\" $is_selected >$title</option>";
+		
+				$is_selected = ($id == $menu_id) ? 'selected="selected"' : '';		
+				$level = $this->menu_walker($id);
+				echo "<option style=\"margin-left:$level;\" $is_selected value=\"$id\">$title</option>";
+				
+				$children = $this->menu_has_children($id);
+								
+				if ($children) :
+					foreach ($children as $child) :
+						
+						$meta = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $child", OBJECT);
+						$level = $this->menu_walker($child);
+						$is_selected = ($child == $menu_id) ? 'selected="selected"' : '';	
+						echo "<option style=\"margin-left:$level;\" $is_selected value=\"$child\">$meta->menu_title</option>";
+											
+					endforeach;
+				endif;
 			
 			endforeach;
 		
 		endif;
+		
+		exit();
 		
 	}
 	
@@ -1008,33 +1559,76 @@ class MenusPlus {
 				$list_order = $item['list_order'];
 				$url = $item['url'];
 				$label = $item['label'];
+				$menu_id = $item['menu_id'];
 				
 				switch ($type) :
+					case "home" :
+						$sort_title = $label;
+						$display_type = _("Home");
+						break;
 					case "page" :
 						$page = get_page($wp_id);
 						$sort_title = $page->post_title;
+						$display_type = _("Page");
+						break;
+					case "post" :
+						$page = get_page($wp_id);
+						$sort_title = $page->post_title;
+						$display_type = _("Post");
 						break;
 					case "cat" :
 						$cat = $wpdb->get_row("SELECT * FROM $wpdb->terms WHERE term_ID='$wp_id'", OBJECT);
 						$sort_title = $cat->name; 
+						$display_type = _("Category");
 						break;
 					case "url" :
 						$sort_title = $label;
+						$display_type = _("URL");
+						break;
+					case "hybrid" :
+						$menu = $wpdb->get_row("SELECT * FROM $menus_table WHERE id = $wp_id", OBJECT );
+						$sort_title = $menu->menu_title;
+						$display_type = _("Hybrid");
 						break;
 					default:
 				endswitch;
 				?>
 				<li id="mp_id_<?php echo $id; ?>" class="mp_list_item">
-					<div class="list_item_title">
-						<?php echo $sort_title; ?>
+					<div class="list_item_left">
+						<div class="list_item_title">
+							<?php echo $sort_title; ?>
+						</div>
 					</div>
-					<div class="list_item_meta">
-						<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_dialog&id=<?php echo $id; ?>&width=350&height=250" title="Edit <?php echo $sort_title; ?>">
-							<?php _e("Edit"); ?>
-						</a>
-						<a class="mp_remove" id="mp_remove_<?php echo $id; ?>">
-							<?php _e("Remove"); ?>
-						</a>
+					<div class="list_item_right">
+						<div>
+							
+							<span class="list_item_type"><?php echo $display_type; ?></span> 						
+							
+							<?php if ($type == "hybrid") : ?>
+								
+								<a  href="themes.php?page=menusplus&menu_id=<?php echo $wp_id; ?>" title="<?php _e("Edit"); ?> <?php echo $sort_title; ?>">
+									<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" align="absmiddle" />
+								</a>
+								
+								<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_remove_hybrid_dialog&id=<?php echo $id; ?>&menu_id=<?php echo $wp_id; ?>&width=350&height=200" title="<?php _e("Remove"); ?>">
+									<img src="<?php echo plugin_dir_url( __FILE__ );?>images/remove.png" align="absmiddle" />
+								</a>
+								
+							<?php else : ?>
+								
+								<a class="thickbox" href="<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php?action=menusplus_edit_dialog&id=<?php echo $id; ?>&width=350&height=250&current_id=<?php echo $menu_id; ?>" title="<?php _e("Edit"); ?> <?php echo $sort_title; ?>">
+									<img src="<?php echo plugin_dir_url( __FILE__ );?>images/edit.png" align="absmiddle" />
+								</a>
+								
+								<a class="mp_remove" id="mp_remove_<?php echo $id; ?>" title="<?php _e("Remove"); ?>">
+									<img src="<?php echo plugin_dir_url( __FILE__ );?>images/remove.png" align="absmiddle" />
+								</a>
+							
+							<?php endif; ?>
+															
+							
+							
+						</div>
 					</div>
 					<div class="clear_list_floats"></div>
 				</li>
@@ -1051,6 +1645,7 @@ class MenusPlus {
 
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 		
 		$type  = $_POST['type'];
@@ -1063,6 +1658,7 @@ class MenusPlus {
 		$children_order = $_POST['children_order'];
 		$children_order_dir = $_POST['children_order_dir'];
 		$menu_id = $_POST['menu_id'];
+		$target = $_POST['target'];
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
@@ -1080,35 +1676,43 @@ class MenusPlus {
 				'children'   			=> $children,
 				'children_order' 		=> $children_order,
 				'children_order_dir' 	=> $children_order_dir,
-				'menu_id'				=> $menu_id
+				'menu_id'				=> $menu_id,
+				'target'                => $target
 				);
-				
-		// Validate for URL submissions
-		
-		if ($type == "url") :
-		
-			$valid_url = preg_match("/^(http(s?):\/\/|ftp:\/\/{1})((\w+\.){1,})\w{2,}$/i", $url);
+							
+		if ($type == "hybrid") :
+					
+			$title = stripslashes($label);
 			
-			if (!$valid_url) :
-				
-				echo "1";
-				
-				exit();
-				
-			endif;
+			$menu_data_array = array(
+				'menu_title' => $title,
+				'parent_id'	 => $menu_id
+			);
+
+			$wpdb->insert($menus_table, $menu_data_array );
+			$last_result = $wpdb->insert_id;
 			
-			if (empty($label)) :
+			// WPID will represent the hybrid menus id. 
 			
-				echo "2";
-				
-				exit();
-				
-			endif;
-		
+			$data_array = array(
+					'type'					=> $type,
+					'wp_id'     			=> $last_result,
+					'list_order' 			=> $highest_order,
+					'class'      			=> $class,
+					'url'       			=> $url,
+					'label'      			=> $label,
+					'children'   			=> $children,
+					'children_order' 		=> $children_order,
+					'children_order_dir' 	=> $children_order_dir,
+					'menu_id'				=> $menu_id,
+					'target'                => $target
+					);
+					
+			echo $last_result; // Redirect for new hybrid list
+			
 		endif;
 
 		$wpdb->insert($items_table, $data_array );
-
 		exit();
 
 	}
@@ -1129,6 +1733,7 @@ class MenusPlus {
 		$children_order = $_POST['children_order'];
 		$children_order_dir = $_POST['children_order_dir'];
 		$type = $_POST['type'];
+		$target = $_POST['target'];
 		
 		$data_array = array(
 				'wp_id'     			=> $wp_id,
@@ -1137,39 +1742,114 @@ class MenusPlus {
 				'label'      			=> $label,
 				'children'   			=> $children,
 				'children_order' 		=> $children_order,
-				'children_order_dir' 	=> $children_order_dir
+				'children_order_dir' 	=> $children_order_dir,
+				'target'				=> $target
 				);
 				
 		$class = stripslashes($class);
 		$label = stripslashes($label);
 		$url = stripslashes($url);
+				
+		$where = array('id' => $id);
+		$wpdb->update($items_table, $data_array, $where );
 		
-		// Validate for URL submissions
+		exit();
+		
+	}
+		
+	function edit_hybrid() {
+		
+		global $wpdb;
+		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$menu_id = $_POST['menu_id'];
+		$label = $_POST['label'];
+		$class = $_POST['opt_class'];
+		
+		$class = stripslashes($class);
+		$label = stripslashes($label);
+		
+		// Update Class
+		$data_array = array(
+			'class' => $class,
+		);
+		
+		$where = array('wp_id' => $menu_id);
+		$wpdb->update($items_table, $data_array, $where );
+		
+		// Update Title
+		$data_array = array(
+			'menu_title' => $label,
+		);
+		
+		$where = array('id' => $menu_id);
+		$wpdb->update($menus_table, $data_array, $where );
+		
+		exit();
+	}	
+		
+	function validate() {
+		
+		global $wpdb;
+		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$type  = $_POST['type'];
+		$wp_id = $_POST['wp_id'];
+			$wp_id = $this->is_undefined($wp_id);
+		$class = $_POST['opt_class'];
+		$label = $_POST['label'];
+		$url   = $_POST['url'];
+		$children = $_POST['children'];
+		$children_order = $_POST['children_order'];
+		$children_order_dir = $_POST['children_order_dir'];
+		$menu_id = $_POST['menu_id'];
+		$target = $_POST['target'];
+		
+		$class = stripslashes($class);
+		$label = stripslashes($label);
+		$url = stripslashes($url);
+		
+		$regex = "((https?|ftp)\:\/\/)?"; // SCHEME
+		$regex .= "([a-z0-9+!*(),;?&=\$_.-]+(\:[a-z0-9+!*(),;?&=\$_.-]+)?@)?"; // User and Pass
+	    $regex .= "([a-z0-9-.]*)\.([a-z]{2,3})"; // Host or IP
+	    $regex .= "(\:[0-9]{2,5})?"; // Port
+	    $regex .= "(\/([a-z0-9+\$_-]\.?)+)*\/?"; // Path
+	    $regex .= "(\?[a-z+&\$_.-][a-z0-9;:@&%=+\/\$_.-]*)?"; // GET Query
+	    $regex .= "(#[a-z_.-][a-z0-9+\$_.-]*)?"; // Anchor
 		
 		if ($type == "url") :
-		
-			$valid_url = preg_match("/^(http(s?):\/\/|ftp:\/\/{1})((\w+\.){1,})\w{2,}$/i", $url);
+					
+			$valid_url = preg_match("/^$regex$/", $url);
 			
 			if (!$valid_url) :
-				
-				echo "1";
-				
+				echo "1"; // URL error
 				exit();
-				
 			endif;
 			
 			if (empty($label)) :
-			
-				echo "2";
-				
+				echo "2"; // Label error
 				exit();
-				
 			endif;
+			
+		elseif ($type == "home") :
 		
+			if (empty($label)) :
+				echo "2"; // Label error
+				exit();
+			endif;
+			
+		elseif ($type == "hybrid") :
+		
+			if (empty($label)) :
+				echo "2"; // Label error
+				exit();
+			endif;
+			
 		endif;
-		
-		$where = array('id' => $id);
-		$wpdb->update($items_table, $data_array, $where );
 		
 		exit();
 		
@@ -1266,7 +1946,7 @@ class MenusPlus {
 		
 		// How many menus are there?
 		
-		$count = $wpdb->query("SELECT * from $menus_table");
+		$count = $wpdb->query("SELECT * from $menus_table WHERE parent_id is NULL");
 
 		if ($count == 1) :
 		
@@ -1276,6 +1956,14 @@ class MenusPlus {
 		
 			$wpdb->query("DELETE from $items_table WHERE menu_id = $id");
 			$wpdb->query("DELETE from $menus_table WHERE id = $id");
+			$children = $this->menu_has_children($id);
+			if ($children) :
+				foreach ($children as $child) :
+					$wpdb->query("DELETE from $menus_table WHERE id = $child");
+					$wpdb->query("DELETE from $items_table WHERE wp_id = $child");
+					$wpdb->query("DELETE from $items_table WHERE menu_id = $child");
+				endforeach;
+			endif;
 			
 		endif;
 
@@ -1286,16 +1974,38 @@ class MenusPlus {
 	function remove() {
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . "menusplus";
+		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
 
 		$id = $_POST['id'];
 		$id = trim($id, 'mp_remove_');
-
-		$wpdb->query("DELETE from $table_name WHERE id = $id");
+		
+		$wpdb->query("DELETE from $items_table WHERE id = $id");
 
 		exit();
 
+	}
+	
+	function remove_hybrid() {
+		
+		$id = $_POST['id'];
+		
+		global $wpdb;
+		$items_table = $wpdb->prefix . "menusplus";
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$item = $wpdb->get_row("SELECT * FROM $items_table WHERE id = $id", OBJECT);
+		$menu_id = $item->wp_id; 
+		
+		$wpdb->query("DELETE FROM $menus_table WHERE id = $menu_id");
+		
+		// Now delete all the items beneath this hybrid
+		
+		$wpdb->query("DELETE FROM $items_table WHERE wp_id = $menu_id");
+		$wpdb->query("DELETE FROM $items_table WHERE menu_id = $menu_id");
+		
+		exit();
 	}
 	
 	function highest_order($menu_id) {
@@ -1332,6 +2042,27 @@ class MenusPlus {
 		endif;
 	}
 	
+	function mp_dropdown_posts($selected_wpid = null) {
+		
+		global $wpdb;
+		$menus_table = $wpdb->prefix . "menusplus_menus";
+		$wpdb->show_errors();
+		
+		$items = $wpdb->get_results("SELECT * FROM $wpdb->posts WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date DESC", ARRAY_A );
+		
+		if ($items) :
+		
+			foreach ($items as $item) :
+				$wpid = $item['ID'];
+				$post_title = $item['post_title'];
+				$is_selected = ($wpid == $selected_wpid) ? 'selected="selected"' : '';
+				echo "<option value=\"$wpid\" $is_selected >$post_title</option>";
+			endforeach;
+		
+		endif;
+		
+	}
+
 }
 
 class MenusPlusWidget extends WP_Widget {
@@ -1393,7 +2124,7 @@ class MenusPlusWidget extends WP_Widget {
 		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 		
-		$items = $wpdb->get_results("SELECT * FROM $menus_table ORDER BY id ASC", ARRAY_A );
+		$items = $wpdb->get_results("SELECT * FROM $menus_table WHERE parent_id is NULL ORDER BY id ASC", ARRAY_A );
 		
 		if ($items) :
 		
@@ -1467,6 +2198,17 @@ function menusplus($passed_menu_id = null) {
 			$children = $item['children'];
 			$children_order = $item['children_order'];
 			$children_order_dir = $item['children_order_dir'];
+			$target = $item['target'];
+			
+			$siteurl = get_bloginfo('siteurl');
+			
+			if ($type == "home") :
+			
+				echo '<li class="' . $class . '">';
+				echo '<a href="' . $siteurl . '">' . $label . '</a>';
+				echo "</li>";
+			
+			endif;
 			
 			if ($type == "page") :
 			
@@ -1488,17 +2230,37 @@ function menusplus($passed_menu_id = null) {
 			
 			endif;
 			
+			if ($type == "post") :
+											
+				global $wpdb;
+				$menus_table = $wpdb->prefix . "menusplus_menus";
+				$wpdb->show_errors();
+
+				$posts = $wpdb->get_results("SELECT ID, post_title FROM $wpdb->posts WHERE ID = '$wp_id'", ARRAY_A );
+
+				if ($posts) :
+
+					foreach ($posts as $post) :
+						echo '<li class="' . $class . '">';
+						echo '<a href="' . get_permalink($wp_id) . '">' . $post['post_title'] . '</a>'; 
+						echo '</li>';
+					endforeach;
+
+				endif;
+							
+			endif;
+			
 			if ($type == "cat") :
 			
 				if ($children == "true") :
 				
-					$children = get_categories("child_of=$wp_id&hide_empty=0");
+					$children = get_categories("child_of=$wp_id&orderby=$children_order&hide_empty=0");
 
 					foreach ($children as $child) :
 						$wp_id = $wp_id . "," . $child->cat_ID;
 					endforeach;
 					
-					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&order_by=$children_order&order=$children_order_dir");
+					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&orderby=$children_order&order=$children_order_dir");
 				
 				else :
 			
@@ -1511,11 +2273,21 @@ function menusplus($passed_menu_id = null) {
 			if ($type == "url") :
 			
 				echo "<li class=\"$class\">";
-				echo "<a href=\"$url\">$label</a>";
+				echo "<a href=\"$url\" target=\"$target\">$label</a>";
 				echo "</li>";
 		
 			endif;
-
+			
+			if ($type == "hybrid") :
+			
+				$menu = $wpdb->get_row("SELECT menu_title FROM $menus_table WHERE id = $wp_id");
+				echo "<li>$menu->menu_title";
+				echo "<ul class='children'>";
+					menusplus($wp_id);
+				echo "</ul></li>";
+			
+			endif;
+			
 		endforeach;
     endif;
 
