@@ -20,7 +20,7 @@ Create multiple customized menus with pages, posts, categories, and URLS. For CM
 	1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
 	1. If you have multiple lists, use the `<?php menusplus(#); ?>` tag provided on the configuration page.
 
-=Features=
+= Features =
 
 1. Combine pages, posts, categories, and URLs together in unprecedented harmony.
 1. Use a Widget or a template tag. Your choice. 
@@ -68,6 +68,10 @@ When you edit a list, a little box beneath gives you the correct template tag fo
 
 The widget will display a title only if you supply one. If the list is going to be your main navigation, and you don't want the list title to be show, simply leave it blank. 
 
+= What about the URL for the 'top' hyrbid list item? =
+
+When you create/edit a hybrid list you have the option of supplying a URL. This will make the top, or parent list item, a functioning link as well. If you leave it blank, the item will still be a link (with a `<a>` tag), but it will have a blank `href` parameter. This ensures that your beautifully customized CSS dropdowns don't soil themselves. 
+
 == Screenshots ==
 
 1. A view from the admin interface.
@@ -76,6 +80,9 @@ The widget will display a title only if you supply one. If the list is going to 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.8.1 =
+* Give hybrid lists URL options; if you want it to be an actual link.
 
 = 1.8 =
 * Introduced 'Hybrid' lists. These are customizable submenus that can be assembled with Home/Page/Cat/Post/URL. 

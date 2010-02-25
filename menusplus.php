@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.8
+Version: 1.8.1
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -219,7 +219,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.8";
+		$mp_version = "1.8.1";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -478,6 +478,10 @@ class MenusPlus {
 					<tr>
 						<td><div align="right"><?php _e("Label"); ?></div></td>
 						<td><input class="add_label widefat" value="" /></td>
+					</tr>
+					<tr>
+						<td><div align="right"><?php _e("URL"); ?></div></td>
+						<td><input class="add_url widefat" value="" /></td>
 					</tr>
 					<tr>
 						<td><div align="right"><?php _e("Class"); ?></div></td>
@@ -795,6 +799,7 @@ class MenusPlus {
 		
 		$title = $menu->menu_title;
 		$class = $item->class;
+		$url = $item->url;
 		
 		?>
 		<div class="mp_edit_hybrid">
@@ -806,6 +811,10 @@ class MenusPlus {
 			<tr>
 				<td><div align="right"><?php _e("Class"); ?></div></td>
 				<td><input class="edit_hybrid_class widefat" value="<?php echo $class; ?>" /></td>
+			</tr>
+			<tr>
+				<td><div align="right"><?php _e("URL"); ?></div></td>
+				<td><input class="edit_hybrid_url widefat" value="<?php echo $url; ?>" /></td>
 			</tr>
 			<tr>
 				<td><div align="right"></div></td>
@@ -1135,6 +1144,7 @@ class MenusPlus {
 						var menu_id = "<?php echo $menu_id; ?>";
 						var label = $('input.edit_hybrid_label').val();
 						var opt_class = $('input.edit_hybrid_class').val();
+						var url = $('input.edit_hybrid_url').val();
 						var type = "hybrid";
 						// Validate
 						$.post(
@@ -1142,11 +1152,18 @@ class MenusPlus {
 							{
 								action:"menusplus_validate", 
 								label:label,
-								type:type
+								type:type,
+								url:url,
+								opt_class:opt_class
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
-								if (str == "2") {
+								if (str == "1") {
+									// URL issue
+									alert('<?php _e('You must enter a valid URL.'); ?>');
+									$('input.edit_hybrid_url').addClass('mp_validate');
+								
+								} else if (str == "2") {
 									// Label issue
 									alert('<?php _e('You must enter a label.'); ?>');
 									$('input.edit_hybrid_label').addClass('mp_validate');
@@ -1159,6 +1176,7 @@ class MenusPlus {
 											menu_id:menu_id,
 											opt_class:opt_class,
 											label:label,
+											url:url
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
@@ -1652,13 +1670,20 @@ class MenusPlus {
 		$wp_id = $_POST['wp_id'];
 			$wp_id = $this->is_undefined($wp_id);
 		$class = $_POST['opt_class'];
+			$class = $this->is_undefined($class);
 		$label = $_POST['label'];
+			$label = $this->is_undefined($label);
 		$url   = $_POST['url'];
+			$url = $this->is_undefined($url);
 		$children = $_POST['children'];
+			$children = $this->is_undefined($children);
 		$children_order = $_POST['children_order'];
+			$children_order = $this->is_undefined($children_order);
 		$children_order_dir = $_POST['children_order_dir'];
+			$children_order_dir = $this->is_undefined($children_order_dir);
 		$menu_id = $_POST['menu_id'];
 		$target = $_POST['target'];
+			$target = $this->is_undefined($target);
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
@@ -1724,16 +1749,23 @@ class MenusPlus {
 		$wpdb->show_errors();
 		
 		$id  = $_POST['id'];
+		$type  = $_POST['type'];
 		$wp_id = $_POST['wp_id'];
 			$wp_id = $this->is_undefined($wp_id);
 		$class = $_POST['opt_class'];
+			$class = $this->is_undefined($class);
 		$label = $_POST['label'];
+			$label = $this->is_undefined($label);
 		$url   = $_POST['url'];
+			$url = $this->is_undefined($url);
 		$children = $_POST['children'];
+			$children = $this->is_undefined($children);
 		$children_order = $_POST['children_order'];
+			$children_order = $this->is_undefined($children_order);
 		$children_order_dir = $_POST['children_order_dir'];
-		$type = $_POST['type'];
+			$children_order_dir = $this->is_undefined($children_order_dir);
 		$target = $_POST['target'];
+			$target = $this->is_undefined($target);
 		
 		$data_array = array(
 				'wp_id'     			=> $wp_id,
@@ -1767,6 +1799,7 @@ class MenusPlus {
 		$menu_id = $_POST['menu_id'];
 		$label = $_POST['label'];
 		$class = $_POST['opt_class'];
+		$url = $_POST['url'];
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
@@ -1774,6 +1807,7 @@ class MenusPlus {
 		// Update Class
 		$data_array = array(
 			'class' => $class,
+			'url' => $url
 		);
 		
 		$where = array('wp_id' => $menu_id);
@@ -1847,6 +1881,14 @@ class MenusPlus {
 			if (empty($label)) :
 				echo "2"; // Label error
 				exit();
+			endif;
+			
+			if (!empty($url)) :
+				$valid_url = preg_match("/^$regex$/", $url);
+				if (!$valid_url) :
+					echo "1"; // URL error
+					exit();
+				endif;
 			endif;
 			
 		endif;
@@ -2037,8 +2079,10 @@ class MenusPlus {
 	
 	function is_undefined($str) {
 		
-		if ($str == "undefined") : return 0;
-		else : return $str;
+		if ($str == "undefined") : 
+			return null;
+		else : 
+			return $str;
 		endif;
 	}
 	
@@ -2281,7 +2325,7 @@ function menusplus($passed_menu_id = null) {
 			if ($type == "hybrid") :
 			
 				$menu = $wpdb->get_row("SELECT menu_title FROM $menus_table WHERE id = $wp_id");
-				echo "<li>$menu->menu_title";
+				echo "<li class='$class'><a href='$url'>$menu->menu_title</a>";
 				echo "<ul class='children'>";
 					menusplus($wp_id);
 				echo "</ul></li>";
