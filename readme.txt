@@ -81,6 +81,9 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 
 == Changelog ==
 
+= 1.8.2 =
+* Even better URL validatoin with `filter_var()`
+
 = 1.8.1 =
 * Give hybrid lists URL options; if you want it to be an actual link.
 

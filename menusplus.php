@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.8.1
+Version: 1.8.2
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -219,7 +219,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.8.1";
+		$mp_version = "1.8.2";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -1847,17 +1847,23 @@ class MenusPlus {
 		$label = stripslashes($label);
 		$url = stripslashes($url);
 		
-		$regex = "((https?|ftp)\:\/\/)?"; // SCHEME
-		$regex .= "([a-z0-9+!*(),;?&=\$_.-]+(\:[a-z0-9+!*(),;?&=\$_.-]+)?@)?"; // User and Pass
-	    $regex .= "([a-z0-9-.]*)\.([a-z]{2,3})"; // Host or IP
-	    $regex .= "(\:[0-9]{2,5})?"; // Port
-	    $regex .= "(\/([a-z0-9+\$_-]\.?)+)*\/?"; // Path
-	    $regex .= "(\?[a-z+&\$_.-][a-z0-9;:@&%=+\/\$_.-]*)?"; // GET Query
-	    $regex .= "(#[a-z_.-][a-z0-9+\$_.-]*)?"; // Anchor
+		// Use PHP 5.2.0's filter_var for URL regex, if earlier PHP use the defined regex
 		
+		if (version_compare("5.2", phpversion(), "<=")) { 
+			$valid_url = filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED);
+		} else {
+			$regex = "((https?|ftp)\:\/\/)?"; // SCHEME
+			$regex .= "([a-z0-9+!*(),;?&=\$_.-]+(\:[a-z0-9+!*(),;?&=\$_.-]+)?@)?"; // User and Pass
+		    $regex .= "([a-z0-9-.]*)\.([a-z]{2,3})"; // Host or IP
+		    $regex .= "(\:[0-9]{2,5})?"; // Port
+		    $regex .= "(\/([a-z0-9+\$_-]\.?)+)*\/?"; // Path
+		    $regex .= "(\?[a-z+&\$_.-][a-z0-9;:@&%=+\/\$_.-]*)?"; // GET Query
+		    $regex .= "(#[a-z_.-][a-z0-9+\$_.-]*)?"; // Anchor
+			$valid_url = preg_match("/^$regex$/", $url);
+		}	
+	
 		if ($type == "url") :
 					
-			$valid_url = preg_match("/^$regex$/", $url);
 			
 			if (!$valid_url) :
 				echo "1"; // URL error
@@ -1884,7 +1890,6 @@ class MenusPlus {
 			endif;
 			
 			if (!empty($url)) :
-				$valid_url = preg_match("/^$regex$/", $url);
 				if (!$valid_url) :
 					echo "1"; // URL error
 					exit();
