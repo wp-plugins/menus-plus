@@ -1997,14 +1997,14 @@ class MenusPlus {
 			
 		elseif ($type == "cat") :
 
-			if (!is_int($depth)) :
+			if (!is_numeric($depth)) :
 				echo "3"; // Depth error
 				exit();
 			endif;
 			
 		elseif ($type == "page") :
 
-			if (!is_int($depth)) :
+			if (!is_numeric($depth)) :
 				echo "3"; // Depth error
 				exit();
 			endif;		
