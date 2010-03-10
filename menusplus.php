@@ -3,11 +3,10 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.8.1
+Version: 1.9
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
-
 
 /*  Copyright 2009 Kyle Truscott  (email : info@keighl.com)
 
@@ -25,6 +24,8 @@ Author URI: http://www.keighl.com
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
+// TODO current category override
 
 $menusplus = new MenusPlus();
 
@@ -68,6 +69,7 @@ class MenusPlus {
 		add_action('wp_ajax_menusplus_remove_menu', array(&$this, 'remove_menu'));
 		
 		add_action("widgets_init", array(&$this, 'init_widget'));
+		add_shortcode('menusplus', array(&$this, 'mp_shortcode'));
 				
 	}
 	
@@ -100,6 +102,7 @@ class MenusPlus {
 				children_order_dir text NULL,
 				menu_id int DEFAULT '1' NOT NULL,
 				target text NULL,
+				depth int DEFAULT '0' NOT NULL
 				PRIMARY  KEY id (id)
 				);";
 
@@ -151,6 +154,10 @@ class MenusPlus {
 				array(
 					"column" => "target",
 					"meta"   => "text NULL"
+				),
+				array(
+					"column" => "depth",
+					"meta"   => "int DEFAULT '0' NOT NULL"
 				)
 			);
 
@@ -219,7 +226,7 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.8.1";
+		$mp_version = "1.9";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -316,9 +323,30 @@ class MenusPlus {
 		
 		<?php if (!$parent) : ?>
 			<div class="wrap">
-				<p><?php _e('Template Tag') ?>:
-	        	<input class="mp_template_tag" value="&lt;?php menusplus(<?php echo $menu_id; ?>); ?&gt;" />
-				<a href="http://www.keighl.com/plugins/menus-plus/"><?php _e('Docs') ?></a></p>
+				<table cellspacing="6">
+					<tr>
+						<td>
+							<div align="right"><?php _e('Template Tag') ?></div>
+						</td>
+						<td>
+							<input class="widefat" value="&lt;?php menusplus(<?php echo $menu_id; ?>); ?&gt;" style="width:200px;" />
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div align="right"><?php _e('Shortcode') ?></div>
+						</td>
+						<td>
+							<input class="widefat" value='[menusplus menu="<?php echo $menu_id; ?>"]' style="width:200px;" />
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div align="right"><a href="http://www.keighl.com/plugins/menus-plus/"><?php _e("Docs"); ?></a></div>
+						</td>
+						<td></td>
+					</tr>
+				</table>
 			</div>
 		<?php endif; ?>
 					
@@ -391,6 +419,15 @@ class MenusPlus {
 							</select>
 	                    </td>
 				    </tr>
+					<tr>
+						<td><div align="right"><?php _e("Depth"); ?></div></td>
+						<td>
+							<input class="add_depth widefat" value="0" style="width:2em;" />
+							<a class="depth_help">
+								<img src="<?php echo plugin_dir_url( __FILE__ );?>images/help.png" align="absmiddle" />
+							</a>
+	                    </td>
+				    </tr>
 				<?php elseif ($type == "page") : ?>
 					<tr>
 						<td>
@@ -433,6 +470,15 @@ class MenusPlus {
 								<option value="ASC">ASC</option>
 								<option value="DESC">DESC</option>
 							</select>
+	                    </td>
+				    </tr>
+					<tr>
+						<td><div align="right"><?php _e("Depth"); ?></div></td>
+						<td>
+							<input class="add_depth widefat" value="0" style="width:2em;" />
+							<a class="depth_help">
+								<img src="<?php echo plugin_dir_url( __FILE__ );?>images/help.png" align="absmiddle" />
+							</a>
 	                    </td>
 				    </tr>
 				<?php elseif ($type == "post") : ?>
@@ -531,6 +577,7 @@ class MenusPlus {
 				$list_order = $meta['list_order'];
 				$menu_id = $meta['menu_id'];
 				$target = $meta['target'];
+				$depth = $meta['depth'];
 			endforeach;
 		endif;
 		
@@ -592,6 +639,15 @@ class MenusPlus {
 							</select>
 	                    </td>
 				    </tr>
+					<tr>
+						<td><div align="right"><?php _e("Depth"); ?></div></td>
+						<td>
+							<input class="edit_depth widefat" value="<?php echo $depth; ?>" style="width:2em;" />
+							<a class="depth_help">
+								<img src="<?php echo plugin_dir_url( __FILE__ );?>images/help.png" align="absmiddle" />
+							</a>
+	                    </td>
+				    </tr>
 				<?php elseif ($type == "page") : ?>
 					<tr>
 						<td>
@@ -632,6 +688,15 @@ class MenusPlus {
 								<option value="ASC" <?php if ($children_order_dir == "ASC") : ?> selected="selected" <?php endif; ?> >ASC</option>
 								<option value="DESC" <?php if ($children_order_dir == "DESC") : ?> selected="selected" <?php endif; ?> >DESC</option>
 							</select>
+	                    </td>
+				    </tr>
+					<tr>
+						<td><div align="right"><?php _e("Depth"); ?></div></td>
+						<td>
+							<input class="edit_depth widefat" value="<?php echo $depth; ?>" style="width:2em;" />
+							<a class="depth_help">
+								<img src="<?php echo plugin_dir_url( __FILE__ );?>images/help.png" align="absmiddle" />
+							</a>
 	                    </td>
 				    </tr>
 				<?php elseif ($type == "post") : ?>
@@ -970,6 +1035,10 @@ class MenusPlus {
 				.mp_in_order_to {
 					color:#21759b;
 				}
+				
+				.depth_help {
+					cursor:pointer;
+				}
 			
 		</style>
 
@@ -1003,6 +1072,7 @@ class MenusPlus {
 						var children_order = $('select.add_children_order').val();
 						var children_order_dir = $('select.add_children_order_dir').val();
 						var target = $('select.add_target').val();
+						var depth = $('input.add_depth').val();
 						
 						// Validate
 						$.post(
@@ -1018,7 +1088,8 @@ class MenusPlus {
 								label:label,
 								url:url,
 								menu_id:<?php echo $menu_id; ?>,
-								target:target
+								target:target,
+								depth:depth
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
@@ -1030,6 +1101,10 @@ class MenusPlus {
 									// Label issue
 									alert('<?php _e('You must enter a label.'); ?>');
 									$('input.add_label').addClass('mp_validate');
+								} else if (str == "3") {
+									// Depth issue
+									alert('<?php _e('Depth must be an integer.'); ?>');
+									$('input.add_depth').addClass('mp_validate');
 							 	} else {
 									// Insert
 									$.post(
@@ -1045,7 +1120,8 @@ class MenusPlus {
 											label:label,
 											url:url,
 											menu_id : <?php echo $menu_id; ?>,
-											target : target
+											target : target,
+											depth:depth
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
@@ -1079,6 +1155,7 @@ class MenusPlus {
 						var children_order = $('select.edit_children_order').val();
 						var children_order_dir = $('select.edit_children_order_dir').val();
 						var target = $('select.edit_target').val();
+						var depth = $('input.edit_depth').val();
 						
 						// Validate
 						$.post(
@@ -1094,7 +1171,8 @@ class MenusPlus {
 								label:label,
 								url:url,
 								type:type,
-								target : target
+								target:target,
+								depth:depth
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
@@ -1106,6 +1184,10 @@ class MenusPlus {
 									// Label issue
 									alert('<?php _e('You must enter a label.'); ?>');
 									$('input.edit_label').addClass('mp_validate');
+								} else if (str == "3") {
+									// Depth issue
+									alert('<?php _e('Depth must be an integer.'); ?>');
+									$('input.edit_depth').addClass('mp_validate');
 							 	} else {
 									// Insert
 									$.post(
@@ -1121,7 +1203,8 @@ class MenusPlus {
 											label:label,
 											url:url,
 											type:type,
-											target : target
+											target:target,
+											depth:depth
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
@@ -1337,6 +1420,15 @@ class MenusPlus {
 						window.location.replace('themes.php?page=menusplus&menu_id='+menu_id);
 					}
 				);
+				
+				// Help dialogs
+				
+				$(".depth_help").live("click", 
+					function () {
+						var msg = '<?php _e('This parameter controls how many levels in the hierarchy are to be included. \n\n 0 : Displays all depths \n 1 : Displays only the top heirarchy \n n : Displays items to the given depth \n\n Depending on the depth you set, it may override your children display settings.'); ?>';
+						alert(msg);
+					}
+				);	
 								
 				
 				// Funtions
@@ -1684,6 +1776,8 @@ class MenusPlus {
 		$menu_id = $_POST['menu_id'];
 		$target = $_POST['target'];
 			$target = $this->is_undefined($target);
+		$depth = $_POST['depth'];
+			$depth = $this->is_undefined($depth);
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
@@ -1702,7 +1796,8 @@ class MenusPlus {
 				'children_order' 		=> $children_order,
 				'children_order_dir' 	=> $children_order_dir,
 				'menu_id'				=> $menu_id,
-				'target'                => $target
+				'target'                => $target,
+				'depth'					=> $depth
 				);
 							
 		if ($type == "hybrid") :
@@ -1730,7 +1825,8 @@ class MenusPlus {
 					'children_order' 		=> $children_order,
 					'children_order_dir' 	=> $children_order_dir,
 					'menu_id'				=> $menu_id,
-					'target'                => $target
+					'target'                => $target,
+					'depth'					=> $depth
 					);
 					
 			echo $last_result; // Redirect for new hybrid list
@@ -1766,6 +1862,12 @@ class MenusPlus {
 			$children_order_dir = $this->is_undefined($children_order_dir);
 		$target = $_POST['target'];
 			$target = $this->is_undefined($target);
+		$depth = $_POST['depth'];
+			$depth = $this->is_undefined($depth);
+		
+		$class = stripslashes($class);
+		$label = stripslashes($label);
+		$url = stripslashes($url);
 		
 		$data_array = array(
 				'wp_id'     			=> $wp_id,
@@ -1775,12 +1877,9 @@ class MenusPlus {
 				'children'   			=> $children,
 				'children_order' 		=> $children_order,
 				'children_order_dir' 	=> $children_order_dir,
-				'target'				=> $target
+				'target'				=> $target,
+				'depth'					=> $depth
 				);
-				
-		$class = stripslashes($class);
-		$label = stripslashes($label);
-		$url = stripslashes($url);
 				
 		$where = array('id' => $id);
 		$wpdb->update($items_table, $data_array, $where );
@@ -1842,23 +1941,29 @@ class MenusPlus {
 		$children_order_dir = $_POST['children_order_dir'];
 		$menu_id = $_POST['menu_id'];
 		$target = $_POST['target'];
+		$depth = $_POST['depth'];
 		
 		$class = stripslashes($class);
 		$label = stripslashes($label);
 		$url = stripslashes($url);
 		
-		$regex = "((https?|ftp)\:\/\/)?"; // SCHEME
-		$regex .= "([a-z0-9+!*(),;?&=\$_.-]+(\:[a-z0-9+!*(),;?&=\$_.-]+)?@)?"; // User and Pass
-	    $regex .= "([a-z0-9-.]*)\.([a-z]{2,3})"; // Host or IP
-	    $regex .= "(\:[0-9]{2,5})?"; // Port
-	    $regex .= "(\/([a-z0-9+\$_-]\.?)+)*\/?"; // Path
-	    $regex .= "(\?[a-z+&\$_.-][a-z0-9;:@&%=+\/\$_.-]*)?"; // GET Query
-	    $regex .= "(#[a-z_.-][a-z0-9+\$_.-]*)?"; // Anchor
+		// Use PHP 5.2.0's filter_var for URL regex, if earlier PHP use the defined regex
 		
+		if (version_compare("5.2", phpversion(), "<=")) { 
+			$valid_url = filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED);
+		} else {
+			$regex = "((https?|ftp)\:\/\/)?"; // SCHEME
+			$regex .= "([a-z0-9+!*(),;?&=\$_.-]+(\:[a-z0-9+!*(),;?&=\$_.-]+)?@)?"; // User and Pass
+		    $regex .= "([a-z0-9-.]*)\.([a-z]{2,3})"; // Host or IP
+		    $regex .= "(\:[0-9]{2,5})?"; // Port
+		    $regex .= "(\/([a-z0-9+\$_-]\.?)+)*\/?"; // Path
+		    $regex .= "(\?[a-z+&\$_.-][a-z0-9;:@&%=+\/\$_.-]*)?"; // GET Query
+		    $regex .= "(#[a-z_.-][a-z0-9+\$_.-]*)?"; // Anchor
+			$valid_url = preg_match("/^$regex$/", $url);
+		}	
+	
 		if ($type == "url") :
 					
-			$valid_url = preg_match("/^$regex$/", $url);
-			
 			if (!$valid_url) :
 				echo "1"; // URL error
 				exit();
@@ -1884,12 +1989,25 @@ class MenusPlus {
 			endif;
 			
 			if (!empty($url)) :
-				$valid_url = preg_match("/^$regex$/", $url);
 				if (!$valid_url) :
 					echo "1"; // URL error
 					exit();
 				endif;
 			endif;
+			
+		elseif ($type == "cat") :
+
+			if (!is_int($depth)) :
+				echo "3"; // Depth error
+				exit();
+			endif;
+			
+		elseif ($type == "page") :
+
+			if (!is_int($depth)) :
+				echo "3"; // Depth error
+				exit();
+			endif;		
 			
 		endif;
 		
@@ -2106,6 +2224,18 @@ class MenusPlus {
 		endif;
 		
 	}
+	
+	// Shortcode
+	
+	function mp_shortcode($atts) {
+		
+		extract(shortcode_atts(array(
+			'menu' => null,
+		), $atts));
+
+		return "<ul>" . menusplus($menu) . "</ul";
+		
+	}
 
 }
 
@@ -2243,6 +2373,7 @@ function menusplus($passed_menu_id = null) {
 			$children_order = $item['children_order'];
 			$children_order_dir = $item['children_order_dir'];
 			$target = $item['target'];
+			$depth = $item['depth'];
 			
 			$siteurl = get_bloginfo('siteurl');
 			
@@ -2264,7 +2395,7 @@ function menusplus($passed_menu_id = null) {
 						$wp_id = $wp_id . "," . $child->ID;
 					endforeach;
 					
-					wp_list_pages("title_li=&include=$wp_id&sort_column=$children_order&sort_order=$children_order_dir");
+					wp_list_pages("title_li=&include=$wp_id&sort_column=$children_order&sort_order=$children_order_dir&depth=$depth");
 				
 				else :
 								
@@ -2296,6 +2427,13 @@ function menusplus($passed_menu_id = null) {
 			
 			if ($type == "cat") :
 			
+				// Identify the current category if we're not on an archive page
+				
+				if (is_single()) :
+					$currCat = get_the_category();
+					$currCatID = $currCat[0]->cat_ID;
+				endif;
+				
 				if ($children == "true") :
 				
 					$children = get_categories("child_of=$wp_id&orderby=$children_order&hide_empty=0");
@@ -2303,12 +2441,11 @@ function menusplus($passed_menu_id = null) {
 					foreach ($children as $child) :
 						$wp_id = $wp_id . "," . $child->cat_ID;
 					endforeach;
-					
-					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&orderby=$children_order&order=$children_order_dir");
+					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&orderby=$children_order&order=$children_order_dir&current_category=$currCatID&depth=$depth");
 				
 				else :
 			
-					wp_list_categories("title_li=&hide_empty=0&include=$wp_id");
+					wp_list_categories("title_li=&hide_empty=0&include=$wp_id&current_category=$currCatID");
 				
 				endif;
 			
