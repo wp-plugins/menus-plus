@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code></code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.9
+Version: 1.9.1
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -102,7 +102,7 @@ class MenusPlus {
 				children_order_dir text NULL,
 				menu_id int DEFAULT '1' NOT NULL,
 				target text NULL,
-				depth int DEFAULT '0' NOT NULL
+				depth int DEFAULT '0' NOT NULL,
 				PRIMARY  KEY id (id)
 				);";
 
@@ -226,14 +226,14 @@ class MenusPlus {
 
 		endif;
 		
-		$mp_version = "1.9";
+		$mp_version = "1.9.1";
 		update_option('mp_version', $mp_version);
 
 	}
 	
 	function add_admin() {
 
-		add_theme_page('Menus Plus+', 'Menus Plus+', 'administrator', 'menusplus', array(&$this, 'admin'));
+		add_theme_page('Menus Plus+', 'Menus Plus+', 'moderate_comments', 'menusplus', array(&$this, 'admin'));
 
 	}
 	

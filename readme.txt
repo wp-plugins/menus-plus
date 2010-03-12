@@ -86,6 +86,9 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 
 == Changelog ==
 
+= 1.9.1 = 
+* Fixed major bug in table create method
+
 = 1.9 =
 * Added depth parameter to category and page items
 * Added shortcode `[menusplus menu="#"]`
