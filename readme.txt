@@ -86,6 +86,9 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 
 == Changelog ==
 
+= 1.9.3 =
+* Fixes a stupid mistake!
+
 = 1.9.2 =
 * Added "title" attribute support
 * Better database updgrade process. 

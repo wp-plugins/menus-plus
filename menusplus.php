@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.9.2
+Version: 1.9.3
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -2352,9 +2352,7 @@ function menusplus($passed_menu_id = null) {
 				endif;
 				
 				// Deal with the custom attribute title
-								
-				add_filter ('category_description', 'mp_attribute_title', 10, 2);
-				
+												
 				if ($children == "true") :
 					$children = get_categories("child_of=$wp_id&orderby=$children_order&hide_empty=0");
 					foreach ($children as $child) :
