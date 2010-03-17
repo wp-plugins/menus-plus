@@ -19,17 +19,20 @@ Create multiple customized menus with pages, posts, categories, and URLS. For CM
 1. Or use the template tag:
 	1. Place `<?php menusplus(); ?>` in your template ... wherever you want it.
 	1. If you have multiple lists, use the `<?php menusplus(#); ?>` tag provided on the configuration page.
+1. Or use the shortcode:
+	1. `[menusplus menu="#"]`
 
 = Features =
 
 1. Combine pages, posts, categories, and URLs together in unprecedented harmony.
-1. Use a Widget or a template tag. Your choice. 
+1. Use a Widget, template tag, or chortcode. Your choice. 
 1. Create 'hyrbrid' submenus; mixing an matching for the perfect dropdown. 
 1. Choose to display children on a per-item basis
 1. Create as many lists as you want!
 1. Dedicated 'Home Page' option
 1. Optional `class` assignment for URLs/Posts/Hybrids/Home
 1. Supports 'My Page Order' and 'My Category Order'
+1. Configure the depth of category and page children
 1. Fun to drag and drop!
 
 
@@ -60,15 +63,17 @@ You know it. Just change the "Children" option accordingly. At this time you can
 
 = How do I return my separate lists? =
 
-You can either create a widget for that specific list through 'Appearance > Widgets', or use the template tag.
+You can either create a widget for that specific list through 'Appearance > Widgets', template tag, or shortcode.
 
-When you edit a list, a little box beneath gives you the correct template tag for showing that particular list. For example, `<?php menusplus(3); ?>`. If you leave out the number, the earliest list is returned. 
+When you edit a list, a little box beneath gives you the correct template tag for showing that particular list. For example, `<?php menusplus(3); ?>`. If you leave out the number, the earliest list is returned. Same thing goes for the shortcode, `[menusplus menu="3"]`. 
+
+= Note = : If you use the shortcode, it will wrap the list in `<ul>` tags. I can change this if people dissent. 
 
 = Will the widget necessarily display the widgets title? =
 
 The widget will display a title only if you supply one. If the list is going to be your main navigation, and you don't want the list title to be show, simply leave it blank. 
 
-= What about the URL for the 'top' hyrbid list item? =
+= What about the URL for the 'top' hybrid list item? =
 
 When you create/edit a hybrid list you have the option of supplying a URL. This will make the top, or parent list item, a functioning link as well. If you leave it blank, the item will still be a link (with a `<a>` tag), but it will have a blank `href` parameter. This ensures that your beautifully customized CSS dropdowns don't soil themselves. 
 
@@ -80,6 +85,24 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.9.2 =
+* Added "title" attribute support
+* Better database updgrade process. 
+* Sweet loading graphics
+* Streamlined $_POST data handling
+* Better support for widget classing. Gave it a <ul> wrapper.
+
+= 1.9.1 = 
+* Fixed major bug in table create method
+
+= 1.9 =
+* Added depth parameter to category and page items
+* Added shortcode `[menusplus menu="#"]`
+* Added current-cat classing to submenus
+
+= 1.8.2 =
+* Even better URL validation with `filter_var()`
 
 = 1.8.1 =
 * Give hybrid lists URL options; if you want it to be an actual link.
