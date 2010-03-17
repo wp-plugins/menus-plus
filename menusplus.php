@@ -2306,7 +2306,7 @@ function menusplus($passed_menu_id = null) {
 				if ($children == "true") :
 					$children = get_pages("child_of=$wp_id");
 					foreach ($children as $child) :
-						$wp_id .= $child->ID;
+						$wp_id .= "," . $child->ID;
 					endforeach;
 				endif;
 				
@@ -2356,7 +2356,7 @@ function menusplus($passed_menu_id = null) {
 				if ($children == "true") :
 					$children = get_categories("child_of=$wp_id&orderby=$children_order&hide_empty=0");
 					foreach ($children as $child) :
-						$wp_id .= $child->cat_ID;
+						$wp_id .= ", " . $child->cat_ID;
 					endforeach;
 				endif;
 				
