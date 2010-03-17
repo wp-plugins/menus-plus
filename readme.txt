@@ -86,6 +86,13 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 
 == Changelog ==
 
+= 1.9.2 =
+* Added "title" attribute support
+* Better database updgrade process. 
+* Sweet loading graphics
+* Streamlined $_POST data handling
+* Better support for widget classing. Gave it a <ul> wrapper.
+
 = 1.9.1 = 
 * Fixed major bug in table create method
 
