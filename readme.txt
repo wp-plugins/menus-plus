@@ -75,7 +75,7 @@ The widget will display a title only if you supply one. If the list is going to 
 
 = What about the URL for the 'top' hybrid list item? =
 
-When you create/edit a hybrid list you have the option of supplying a URL. This will make the top, or parent list item, a functioning link as well. If you leave it blank, the item will still be a link (with a `<a>` tag), but it will have a blank `href` parameter. This ensures that your beautifully customized CSS dropdowns don't soil themselves. 
+When you create/edit a hybrid list you have the option of supplying a URL. This will make the top, or parent list item, a functioning link as well. If you leave it blank, the item will still be a link (with a `<a>` tag), but it will have a blank `href` parameter. This ensures that your beautifully customized CSS drop-downs don't soil themselves. 
 
 == Screenshots ==
 
@@ -85,6 +85,11 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.9.5 =
+* Better IIS support for hybrid/home/url
+* NONCE integration (this should have happened sooner)
+* Better validation and DB santiation
 
 = 1.9.4 =
 * Fixes another bug!

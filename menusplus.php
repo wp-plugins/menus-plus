@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.9.4
+Version: 1.9.5
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -25,8 +25,8 @@ Author URI: http://www.keighl.com
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-// TODO Current Category Override
-// TODO Nonce
+// TODO Address custom taxonomies
+// TODO More dynamic storage system (for custom taxonomies)
 
 $menusplus = new MenusPlus();
 
@@ -135,7 +135,7 @@ class MenusPlus {
 			$wpdb->insert($menus_table, $data_array );
 		}
 		
-		$mp_version = "1.9.4";
+		$mp_version = "1.9.5";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -177,6 +177,9 @@ class MenusPlus {
 		$this->js($menu_id, $parent);
 		$this->style();
 	
+		if ( function_exists('wp_nonce_field') )
+			wp_nonce_field('menus_plus_nonce', 'menus_plus_nonce');
+			
 		?> 
 
 		<div class="wrap mp_margin_bottom">
@@ -514,7 +517,7 @@ class MenusPlus {
 		
 		?>
 		<div class="mp_edit">
-			<input  type="hidden" value="<?php _e($type); ?>" class="edit_type" />
+			<input  type="hidden" value="<?php echo $type; ?>" class="edit_type" />
 			<table cellspacing="16" cellpadding="0">
 				<?php if ($type == "home") : ?>
 					<tr>
@@ -1020,12 +1023,13 @@ class MenusPlus {
 				menu_title(<?php echo $menu_id; ?>);
 				menus_dropdown(<?php echo $menu_id; ?>);
 				menusplus_list(<?php echo $menu_id; ?>);
-												
+				var nonce = $("input#menus_plus_nonce").val();
+								
 				// Add lists
 				
 				$('.mp_add a#add_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var type = $(this).attr('rel');
 						var wp_id = $("select[name='add_wpid']").val();
 						var opt_class = $('input.add_class').val();
@@ -1044,30 +1048,25 @@ class MenusPlus {
 							{
 								action:"menusplus_validate", 
 								type:type,
-								wp_id:wp_id,
-								children:children,
-								children_order:children_order,
-								children_order_dir:children_order_dir,
-								opt_class:opt_class,
 								label:label,
 								url:url,
-								menu_id:<?php echo $menu_id; ?>,
-								target:target,
 								depth:depth,
-								title:title
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// URL issue
 									$('input.add_url').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 								} else if (str == "2") {
 									// Label issue
 									$('input.add_label').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 								} else if (str == "3") {
 									// Depth issue
 									alert('<?php _e('Depth must be an integer.' , "menus-plus"); ?>');
 									$('input.add_depth').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 							 	} else {
 									// Insert
 									$.post(
@@ -1085,22 +1084,24 @@ class MenusPlus {
 											menu_id : <?php echo $menu_id; ?>,
 											target : target,
 											depth:depth,
-											title:title
+											title:title,
+											nonce:nonce,
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
 											if (str == "") {
 												tb_remove();
 												menusplus_list(<?php echo $menu_id; ?>);
+												flash_change(':last');
 											} else {
 												window.location.replace('themes.php?page=menusplus&menu_id=' + str);
 											}
+											$('.menusplus_loading').hide();
 										}
 									);
 								}
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
@@ -1108,7 +1109,7 @@ class MenusPlus {
 				
 				$('.mp_edit a#edit_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var id = $(this).attr('rel');
 						var type = $("input.edit_type").val();
 						var wp_id = $("select[name='edit_wpid']").val();
@@ -1127,31 +1128,26 @@ class MenusPlus {
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_validate", 
-								id:id,
-								wp_id:wp_id,
-								children:children,
-								children_order:children_order,
-								children_order_dir:children_order_dir,
-								opt_class:opt_class,
+								type:type,
 								label:label,
 								url:url,
-								type:type,
-								target:target,
 								depth:depth,
-								title:title
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// URL issue
 									$('input.edit_url').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 								} else if (str == "2") {
 									// Label issue
 									$('input.edit_label').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 								} else if (str == "3") {
 									// Depth issue
 									alert('<?php _e('Depth must be an integer.', "menus-plus"); ?>');
 									$('input.edit_depth').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 							 	} else {
 									// Insert
 									$.post(
@@ -1169,18 +1165,20 @@ class MenusPlus {
 											type:type,
 											target:target,
 											depth:depth,
-											title:title
+											title:title,
+											nonce:nonce
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
 											tb_remove();
-											menusplus_list(<?php echo $menu_id; ?>);
+											flash_change("#mp_id_" + id);
+											//menusplus_list(<?php echo $menu_id; ?>);
+											$('.menusplus_loading').hide();
 										}
 									);
 								}
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
@@ -1188,7 +1186,7 @@ class MenusPlus {
 				
 				$('.mp_edit_hybrid a#edit_hybrid_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var menu_id = "<?php echo $menu_id; ?>";
 						var label = $('input.edit_hybrid_label').val();
 						var opt_class = $('input.edit_hybrid_class').val();
@@ -1200,21 +1198,21 @@ class MenusPlus {
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_validate", 
-								label:label,
 								type:type,
+								label:label,
 								url:url,
-								opt_class:opt_class,
-								title:title
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
 								if (str == "1") {
 									// URL issue
 									$('input.edit_hybrid_url').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 								
 								} else if (str == "2") {
 									// Label issue
 									$('input.edit_hybrid_label').addClass('mp_validate');
+									$('.menusplus_loading').hide();
 							 	} else {
 									// Edit
 									$.post(
@@ -1225,7 +1223,8 @@ class MenusPlus {
 											opt_class:opt_class,
 											label:label,
 											url:url,
-											title:title
+											title:title,
+											nonce:nonce
 										},
 										function(str) {
 											$('input').removeClass('mp_validate');
@@ -1233,51 +1232,53 @@ class MenusPlus {
 											menu_title(<?php echo $menu_id; ?>);
 											menus_dropdown(<?php echo $menu_id; ?>);
 											menusplus_list(<?php echo $menu_id; ?>);
+											$('.menusplus_loading').hide();
 										}
 									);
 								}
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
 				$("a.mp_remove").live("click", 
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var id = $(this).attr('id');
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_remove",
-								id:id
+								id:id,
+								nonce : nonce
 							},
 							function(str) {
 								menusplus_list(<?php echo $menu_id; ?>);
+								$('.menusplus_loading').hide();
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
 				$("a#remove_hybrid_submit").live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var id = $(this).attr("rel");
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_remove_hybrid", 
-								id : id
+								id : id,
+								nonce : nonce
 							},
 							function (str) {
 								tb_remove();
 								menusplus_list(<?php echo $menu_id; ?>);
 								menus_dropdown(<?php echo $menu_id; ?>);
 								menu_title(<?php echo $menu_id; ?>);
+								$('.menusplus_loading').hide();
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
@@ -1285,19 +1286,21 @@ class MenusPlus {
 				
 				$("#menusplus_list ul").sortable({
 					update : function (event, ui) {
-						$('.menusplus_loading').show();	
-						var list_order = $(this).sortable("serialize");
+						$('.menusplus_loading').show();
+						flash = ui.item.attr("id");
+						list_order = $(this).sortable("serialize");
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_sort", 
-								list_order:list_order
+								list_order:list_order,
+								nonce : nonce
 							},
 							function(str) {
-								menusplus_list(<?php echo $menu_id; ?>);
+								$('.menusplus_loading').hide();
+								flash_change('#' + flash);
 							}
 						);
-						$('.menusplus_loading').hide();	
 					} ,
 					opacity: 0.6 
 				});
@@ -1312,13 +1315,14 @@ class MenusPlus {
 				
 				$('.new_menu a#new_menu_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var title = $('input.new_menu_title').val();
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_new_menu", 
-								title : title
+								title : title,
+								nonce : nonce
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
@@ -1328,22 +1332,23 @@ class MenusPlus {
 								} else {
 									window.location.replace('themes.php?page=menusplus&menu_id=' + str);
 								}
+								$('.menusplus_loading').hide();
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);	
 				
 				$('a#edit_menu_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var title = $('input.edit_menu_title').val();
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_edit_menu", 
 								title : title,
-								menu_id : <?php echo $menu_id; ?>
+								menu_id : <?php echo $menu_id; ?>,
+								nonce : nonce
 							},
 							function(str) {
 								$('input').removeClass('mp_validate');
@@ -1356,10 +1361,10 @@ class MenusPlus {
 									menu_title(<?php echo $menu_id; ?>);
 									menus_dropdown(<?php echo $menu_id; ?>);
 									menusplus_list(<?php echo $menu_id; ?>);
+									$('.menusplus_loading').hide();
 								}
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
@@ -1367,13 +1372,14 @@ class MenusPlus {
 				
 				$('a#remove_menu_submit').live("click",
 					function () {
-						$('.menusplus_loading').show();	
+						$('.menusplus_loading').show();
 						var title = $('input.edit_menu_title').val();
 						$.post(
 							"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 							{
 								action:"menusplus_remove_menu", 
-								menu_id : <?php echo $menu_id; ?>
+								menu_id : <?php echo $menu_id; ?>,
+								nonce : nonce
 							},
 							function(str) {
 								if (str == 1) {
@@ -1381,9 +1387,9 @@ class MenusPlus {
 								} else {
 									window.location.replace('themes.php?page=menusplus');
 								}
+								$('.menusplus_loading').hide();
 							}
 						);
-						$('.menusplus_loading').hide();	
 					}
 				);
 				
@@ -1409,6 +1415,7 @@ class MenusPlus {
 				// Funtions
 				
 				function menu_title(menu_id) {
+					$('.menusplus_loading').show();
 					$.post(
 						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 						{
@@ -1417,11 +1424,13 @@ class MenusPlus {
 						},
 						function(str) {
 							$('.mp_menu_title').html(str);
+							$('.menusplus_loading').hide();
 						}
 					);
 				}
 				
 				function menus_dropdown(menu_id) {
+					$('.menusplus_loading').show();
 					$.post(
 						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 						{
@@ -1430,12 +1439,13 @@ class MenusPlus {
 						},
 						function(str) {
 							$('select.mp_switch_menu').html(str);
+							$('.menusplus_loading').hide();
 						}
 					);
 				}
 								
-				function menusplus_list(menu_id) {
-					$('.menusplus_loading').show();	
+				function menusplus_list(menu_id, flash) {
+					$('.menusplus_loading').show();
 					$.post(
 						"<?php echo get_option('siteurl'); ?>/wp-admin/admin-ajax.php", 
 						{
@@ -1443,13 +1453,25 @@ class MenusPlus {
 							menu_id : menu_id
 						},
 						function(str) {
-							$('.menusplus_loading').show();	
-							$('#menusplus_list ul').fadeOut('fast').html(str).fadeIn('slow');
+							$('#menusplus_list ul').html(str);
 							removeThickBoxEvents();
 							tb_init('a.thickbox, area.thickbox, input.thickbox');
-							$('.menusplus_loading').hide();	
+							$('.menusplus_loading').hide();
 						}
 					);
+				}
+				
+				function flash_change(flash) {
+					$('#menusplus_list ul li' + flash).animate({
+					    opacity: 0.25,
+					  }, 100, function() {
+					    // Animation complete.
+					});
+					$('#menusplus_list ul li' + flash).animate({
+					    opacity: 1.0,
+					  }, 1500, function() {
+					    // Animation complete.
+					});
 				}
 				
 				function removeThickBoxEvents() {
@@ -1457,7 +1479,7 @@ class MenusPlus {
 			            $(this).unbind('click');
 			        });
 			    }
-				
+			
 			});
 			
 		</script>
@@ -1729,6 +1751,9 @@ class MenusPlus {
 
 	function add() {
 
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit(); 
+		
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
 		$menus_table = $wpdb->prefix . "menusplus_menus";
@@ -1737,11 +1762,10 @@ class MenusPlus {
 		$data = $this->prep_item_post($_POST);
 		$data['list_order'] = $this->highest_order($data['menu_id']) + 1;
 		unset($data['id']); // Unsets the id key used only by Edit
+		unset($data['nonce']);
 							
 		if ($data['type'] == "hybrid") :
-					
-			$title = stripslashes($label);
-			
+								
 			$menu_data_array = array(
 				'menu_title' => $data['label'],
 				'parent_id'	 => $data['menu_id']
@@ -1762,6 +1786,9 @@ class MenusPlus {
 
 	function edit() {
 		
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
+		
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
@@ -1770,6 +1797,7 @@ class MenusPlus {
 		
 		echo $where = array('id' => $data['id']);
 		unset($data['id']); // Don't pass this
+		unset($data['nonce']);
 		$wpdb->update($items_table, $data, $where );
 		
 		exit();
@@ -1777,6 +1805,9 @@ class MenusPlus {
 	}
 		
 	function edit_hybrid() {
+		
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
 		
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
@@ -1788,6 +1819,7 @@ class MenusPlus {
 		$item_array = $data;
 			unset($item_array['label']);
 			unset($item_array['menu_id']);
+			unset($item_array['nonce']);
 		$where = array('wp_id' => $data['menu_id']);
 		$wpdb->update($items_table, $item_array, $where );
 		
@@ -1807,22 +1839,12 @@ class MenusPlus {
 		$menus_table = $wpdb->prefix . "menusplus_menus";
 		$wpdb->show_errors();
 		
+		array_map('stripslashes_deep', $_POST);
+		
 		$type  = $_POST['type'];
-		$wp_id = $_POST['wp_id'];
-			$wp_id = $this->is_undefined($wp_id);
-		$class = $_POST['opt_class'];
 		$label = $_POST['label'];
 		$url   = $_POST['url'];
-		$children = $_POST['children'];
-		$children_order = $_POST['children_order'];
-		$children_order_dir = $_POST['children_order_dir'];
-		$menu_id = $_POST['menu_id'];
-		$target = $_POST['target'];
 		$depth = $_POST['depth'];
-		
-		$class = stripslashes($class);
-		$label = stripslashes($label);
-		$url = stripslashes($url);
 		
 		// Use PHP 5.2.0's filter_var for URL regex, if earlier PHP use the defined regex
 		
@@ -1872,19 +1894,12 @@ class MenusPlus {
 				endif;
 			endif;
 			
-		elseif ($type == "cat") :
+		elseif ($type == "cat" || $type == "page") :
 
 			if (!is_numeric($depth)) :
 				echo "3"; // Depth error
 				exit();
 			endif;
-			
-		elseif ($type == "page") :
-
-			if (!is_numeric($depth)) :
-				echo "3"; // Depth error
-				exit();
-			endif;		
 			
 		endif;
 		
@@ -1894,6 +1909,9 @@ class MenusPlus {
 	
 	function sort() {
 
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
+		
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
@@ -1924,8 +1942,10 @@ class MenusPlus {
 
 	function new_menu() {
 		
-		$title = $_POST['title'];
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
 		
+		$title = $_POST['title'];
 		if (empty($title)) : echo "empty"; exit(); endif;
 		
 		$title = stripslashes($title);
@@ -1939,14 +1959,15 @@ class MenusPlus {
 		);
 		
 		$wpdb->insert($menus_table, $data_array );
-		
 		echo $last_result = $wpdb->insert_id;
-		
 		exit();
 		
 	}
 	
 	function edit_menu() {
+		
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
 		
 		$title = $_POST['title'];
 		$id = $_POST['menu_id'];
@@ -1971,6 +1992,9 @@ class MenusPlus {
 	}
 	
 	function remove_menu() {
+		
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
 		
 		$id = $_POST['menu_id'];
 		
@@ -2010,6 +2034,9 @@ class MenusPlus {
 
 	function remove() {
 
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
+		
 		global $wpdb;
 		$items_table = $wpdb->prefix . "menusplus";
 		$wpdb->show_errors();
@@ -2024,6 +2051,9 @@ class MenusPlus {
 	}
 	
 	function remove_hybrid() {
+		
+		if (!wp_verify_nonce($_POST['nonce'], 'menus_plus_nonce')) 
+			exit();
 		
 		$id = $_POST['id'];
 		
@@ -2073,8 +2103,7 @@ class MenusPlus {
 	}
 	
 	function is_undefined($str) {
-		
-		if ($str == "undefined") : 
+		if ($str == "undefined" || empty($str) || !$str || $str == "") : 
 			return null;
 		else : 
 			return $str;
@@ -2085,16 +2114,16 @@ class MenusPlus {
 		
 		$arr = array_map( 'stripslashes_deep', $arr );
 		$arr['id']  = $this->is_undefined($arr['id']); // Only used for Edit
-		$arr['wp_id'] = $this->is_undefined($arr['wp_id']);
-		$arr['class'] = $this->is_undefined($arr['opt_class']); // Changes key from opt_class to class ... 
+		$arr['wp_id'] = intval($this->is_undefined($arr['wp_id']));
+		$arr['class'] = strip_tags($this->is_undefined($arr['opt_class']));  // Changes key from opt_class to class ... 
 		$arr['label'] = $this->is_undefined($arr['label']);
-		$arr['url']  = $this->is_undefined($arr['url']);
+		$arr['url']  =  esc_url_raw($this->is_undefined($arr['url']));
 		$arr['children'] = $this->is_undefined($arr['children']);
 		$arr['children_order'] = $this->is_undefined($arr['children_order']);
 		$arr['children_order_dir'] = $this->is_undefined($arr['children_order_dir']);
 		$arr['target'] = $target = $this->is_undefined($arr['target']);
-		$arr['depth'] = $this->is_undefined($arr['depth']);
-		$arr['title'] = $title = $this->is_undefined($arr['title']);
+		$arr['depth'] = intval($this->is_undefined($arr['depth']));
+		$arr['title'] = strip_tags($this->is_undefined($arr['title']));
 		
 		unset($arr['action']); 
 		unset($arr['opt_class']); 
@@ -2105,11 +2134,11 @@ class MenusPlus {
 	function prep_hybrid_post($arr) {
 		
 		$arr = array_map( 'stripslashes_deep', $arr );
-		$arr['menu_id']  = $this->is_undefined($arr['menu_id']); 
+		$arr['menu_id']  = intval($this->is_undefined($arr['menu_id']));
 		$arr['label']  = $this->is_undefined($arr['label']); 
-		$arr['class']  = $this->is_undefined($arr['opt_class']); 
-		$arr['url']  = $this->is_undefined($arr['url']);
-		$arr['title']  = $this->is_undefined($arr['title']); 
+		$arr['class'] = strip_tags($this->is_undefined($arr['opt_class'])); // Changes key from opt_class to class ... 
+		$arr['url']  =  esc_url_raw($this->is_undefined($arr['url']));
+		$arr['title'] = strip_tags($this->is_undefined($arr['title']));
 				
 		unset($arr['action']); 
 		unset($arr['opt_class']); 
