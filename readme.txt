@@ -86,6 +86,9 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 
 == Changelog ==
 
+= 1.9.6 =
+* Fixed a bug where child pages as top menu items were quote wonky. Changed the page logic of the template tag.
+
 = 1.9.5 =
 * Better IIS support for hybrid/home/url
 * NONCE integration (this should have happened sooner)
