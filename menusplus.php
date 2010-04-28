@@ -3,7 +3,7 @@
 Plugin Name: Menus Plus+
 Plugin URI: http://www.keighl.com/plugins/menus-plus/
 Description: Create <strong>multiple</strong> customized menus with pages, categories, and urls. Use a widget or a template tag <code>&lt;?php menusplus(); ?&gt;</code>. <a href="themes.php?page=menusplus">Configuration Page</a>
-Version: 1.9.5
+Version: 1.9.6
 Author: Kyle Truscott
 Author URI: http://www.keighl.com
 */
@@ -135,7 +135,7 @@ class MenusPlus {
 			$wpdb->insert($menus_table, $data_array );
 		}
 		
-		$mp_version = "1.9.5";
+		$mp_version = "1.9.6";
 		update_option('mp_version', $mp_version);
 
 	}
@@ -2331,24 +2331,34 @@ function menusplus($passed_menu_id = null) {
 			endif;
 			
 			if ($type == "page") :
-			
-				if ($children == "true") :
-					$children = get_pages("child_of=$wp_id");
-					foreach ($children as $child) :
-						$wp_id .= "," . $child->ID;
-					endforeach;
-				endif;
 				
-				$array = array(
-					"title_li" => NULL,
-					"include" => $wp_id,
-					"sort_column" => $children_order,
-					"sort_order" => $children_order_dir,
-					"depth" => $depth
-				);
-				
-				wp_list_pages($array);
-			
+					$array = array(
+						"title_li" => NULL,
+						"include" => $wp_id,
+						"sort_column" => $children_order,
+						"sort_order" => $children_order_dir,
+						"depth" => 1,
+						"echo" => 0
+					);
+					
+					$top = wp_list_pages($array);
+					if ($children == "true" && get_pages("child_of=" . $wp_id)) {
+						echo $top = str_replace("</li>", "", $top);
+						$array = array(
+							"title_li" => NULL,
+							"child_of" => $wp_id,
+							"sort_column" => $children_order,
+							"sort_order" => $children_order_dir,
+							"depth" => $depth,
+							"echo" => 0
+						);
+						echo "<ul>";
+						echo $children = wp_list_pages($array);
+						echo "</ul></li>";
+					} else {
+						echo $top;
+					}
+					
 			endif;
 			
 			if ($type == "post") :

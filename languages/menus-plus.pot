@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  \n"
 "Report-Msgid-Bugs-To: http://wordpress.org/tag/menus-plus\n"
-"POT-Creation-Date: 2010-02-25 17:31+0000\n"
+"POT-Creation-Date: 2010-04-06 18:19+0000\n"
 "PO-Revision-Date: 2010-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,214 +16,231 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: menusplus.php:271
+#: menusplus.php:132
+msgid "Default"
+msgstr ""
+
+#: menusplus.php:190
 msgid "Add Home Page"
 msgstr ""
 
-#: menusplus.php:271 menusplus.php:345 menusplus.php:1585
+#: menusplus.php:190 menusplus.php:286 menusplus.php:1677
 msgid "Home"
 msgstr ""
 
-#: menusplus.php:272
+#: menusplus.php:191
 msgid "Add a Category"
 msgstr ""
 
-#: menusplus.php:272 menusplus.php:355 menusplus.php:558 menusplus.php:1600
+#: menusplus.php:191 menusplus.php:300 menusplus.php:543 menusplus.php:1692
 msgid "Category"
 msgstr ""
 
-#: menusplus.php:273
+#: menusplus.php:192
 msgid "Add a Page"
 msgstr ""
 
-#: menusplus.php:273 menusplus.php:398 menusplus.php:599 menusplus.php:1590
+#: menusplus.php:192 menusplus.php:352 menusplus.php:593 menusplus.php:1682
 msgid "Page"
 msgstr ""
 
-#: menusplus.php:274
+#: menusplus.php:193
 msgid "Add a Post"
 msgstr ""
 
-#: menusplus.php:274 menusplus.php:442 menusplus.php:641 menusplus.php:1595
+#: menusplus.php:193 menusplus.php:405 menusplus.php:644 menusplus.php:1687
 msgid "Post"
 msgstr ""
 
-#: menusplus.php:275
+#: menusplus.php:194
 msgid "Add a URL"
 msgstr ""
 
-#: menusplus.php:275 menusplus.php:340 menusplus.php:457 menusplus.php:483
-#: menusplus.php:543 menusplus.php:656 menusplus.php:816 menusplus.php:1604
+#: menusplus.php:194 menusplus.php:281 menusplus.php:424 menusplus.php:454
+#: menusplus.php:524 menusplus.php:663 menusplus.php:834 menusplus.php:1696
 msgid "URL"
 msgstr ""
 
-#: menusplus.php:277
+#: menusplus.php:196
 msgid "Add a Hybrid Menu"
 msgstr ""
 
-#: menusplus.php:277
+#: menusplus.php:196
 msgid "Hybrid Menu"
 msgstr ""
 
-#: menusplus.php:289
+#: menusplus.php:209
 msgid "Edit Menu"
 msgstr ""
 
-#: menusplus.php:292
+#: menusplus.php:212
 msgid "Delete Menu"
 msgstr ""
 
-#: menusplus.php:300
+#: menusplus.php:220
 msgid "Edit Hybrid Menu"
 msgstr ""
 
-#: menusplus.php:306
+#: menusplus.php:226
 msgid "New Menu"
 msgstr ""
 
-#: menusplus.php:319
+#: menusplus.php:242
 msgid "Template Tag"
 msgstr ""
 
-#: menusplus.php:321
+#: menusplus.php:250
+msgid "Shortcode"
+msgstr ""
+
+#: menusplus.php:258
 msgid "Docs"
 msgstr ""
 
-#: menusplus.php:344 menusplus.php:461 menusplus.php:479 menusplus.php:547
-#: menusplus.php:660 menusplus.php:808
+#: menusplus.php:285 menusplus.php:428 menusplus.php:450 menusplus.php:528
+#: menusplus.php:667 menusplus.php:826
 msgid "Label"
 msgstr ""
 
-#: menusplus.php:348 menusplus.php:452 menusplus.php:474 menusplus.php:487
-#: menusplus.php:551 menusplus.php:651 menusplus.php:673 menusplus.php:812
+#: menusplus.php:289 menusplus.php:415 menusplus.php:441 menusplus.php:458
+#: menusplus.php:532 menusplus.php:654 menusplus.php:680 menusplus.php:830
 msgid "Class"
 msgstr ""
 
-#: menusplus.php:363 menusplus.php:406 menusplus.php:566 menusplus.php:607
+#: menusplus.php:293 menusplus.php:419 menusplus.php:445 menusplus.php:462
+#: menusplus.php:536 menusplus.php:658 menusplus.php:684 menusplus.php:838
+msgid "Attribute Title"
+msgstr ""
+
+#: menusplus.php:308 menusplus.php:360 menusplus.php:551 menusplus.php:601
 msgid "Children"
 msgstr ""
 
-#: menusplus.php:366 menusplus.php:409 menusplus.php:569 menusplus.php:610
+#: menusplus.php:311 menusplus.php:363 menusplus.php:554 menusplus.php:604
 msgid "Yes"
 msgstr ""
 
-#: menusplus.php:369 menusplus.php:412 menusplus.php:572 menusplus.php:613
+#: menusplus.php:314 menusplus.php:366 menusplus.php:557 menusplus.php:607
 msgid "No"
 msgstr ""
 
-#: menusplus.php:374 menusplus.php:417 menusplus.php:577 menusplus.php:618
+#: menusplus.php:319 menusplus.php:371 menusplus.php:562 menusplus.php:612
 msgid "Child Order"
 msgstr ""
 
-#: menusplus.php:377 menusplus.php:580
+#: menusplus.php:322 menusplus.php:565
 msgid "Name"
 msgstr ""
 
-#: menusplus.php:378 menusplus.php:423 menusplus.php:581 menusplus.php:624
+#: menusplus.php:323 menusplus.php:377 menusplus.php:566 menusplus.php:618
 msgid "ID"
 msgstr ""
 
-#: menusplus.php:379 menusplus.php:582
+#: menusplus.php:324 menusplus.php:567
 msgid "Count"
 msgstr ""
 
-#: menusplus.php:380 menusplus.php:425 menusplus.php:583 menusplus.php:626
+#: menusplus.php:325 menusplus.php:379 menusplus.php:568 menusplus.php:620
 msgid "Slug"
 msgstr ""
 
-#: menusplus.php:381 menusplus.php:584
+#: menusplus.php:326 menusplus.php:569
 msgid "Term Group"
 msgstr ""
 
-#: menusplus.php:384 menusplus.php:586
+#: menusplus.php:329 menusplus.php:571
 msgid "My Category Order"
 msgstr ""
 
-#: menusplus.php:420 menusplus.php:621 menusplus.php:705 menusplus.php:741
+#: menusplus.php:340 menusplus.php:393 menusplus.php:581 menusplus.php:632
+msgid "Depth"
+msgstr ""
+
+#: menusplus.php:374 menusplus.php:615 menusplus.php:718 menusplus.php:758
 msgid "Title"
 msgstr ""
 
-#: menusplus.php:421 menusplus.php:622
+#: menusplus.php:375 menusplus.php:616
 msgid "Date"
 msgstr ""
 
-#: menusplus.php:422 menusplus.php:623
+#: menusplus.php:376 menusplus.php:617
 msgid "Date Modified"
 msgstr ""
 
-#: menusplus.php:424 menusplus.php:625
+#: menusplus.php:378 menusplus.php:619
 msgid "Author"
 msgstr ""
 
-#: menusplus.php:428 menusplus.php:628
+#: menusplus.php:382 menusplus.php:622
 msgid "My Page Order"
 msgstr ""
 
-#: menusplus.php:465 menusplus.php:664
+#: menusplus.php:432 menusplus.php:671
 msgid "Target"
 msgstr ""
 
-#: menusplus.php:468 menusplus.php:667
+#: menusplus.php:435 menusplus.php:674
 msgid "Same window"
 msgstr ""
 
-#: menusplus.php:469 menusplus.php:668
+#: menusplus.php:436 menusplus.php:675
 msgid "New window"
 msgstr ""
 
-#: menusplus.php:494 menusplus.php:711
+#: menusplus.php:473 menusplus.php:728
 msgid "Add"
 msgstr ""
 
-#: menusplus.php:495 menusplus.php:685 menusplus.php:712 menusplus.php:748
-#: menusplus.php:778 menusplus.php:823 menusplus.php:855
+#: menusplus.php:474 menusplus.php:698 menusplus.php:729 menusplus.php:769
+#: menusplus.php:800 menusplus.php:849 menusplus.php:882
 msgid "Cancel"
 msgstr ""
 
-#: menusplus.php:684 menusplus.php:747 menusplus.php:822
+#: menusplus.php:697 menusplus.php:768 menusplus.php:848
 msgid "Update"
 msgstr ""
 
-#: menusplus.php:777 menusplus.php:854
+#: menusplus.php:799 menusplus.php:881
 msgid "Delete"
 msgstr ""
 
-#: menusplus.php:1027 menusplus.php:1103 menusplus.php:1163
-msgid "You must enter a valid URL."
+#: menusplus.php:1067 menusplus.php:1148
+msgid "Depth must be an integer."
 msgstr ""
 
-#: menusplus.php:1031 menusplus.php:1107 menusplus.php:1168
-msgid "You must enter a label."
-msgstr ""
-
-#: menusplus.php:1272
-msgid "You must enter a title."
-msgstr ""
-
-#: menusplus.php:1323
+#: menusplus.php:1386
 msgid "You cannot delete your only menu."
 msgstr ""
 
-#: menusplus.php:1609
+#: menusplus.php:1409
+msgid ""
+"This parameter controls how many levels in the hierarchy are to be included. "
+"\\n\\n 0 : Displays all depths \\n 1 : Displays only the top heirarchy \\n "
+"n : Displays items to the given depth \\n\\n Depending on the depth you set, "
+"it may override your children display settings."
+msgstr ""
+
+#: menusplus.php:1701
 msgid "Hybrid"
 msgstr ""
 
-#: menusplus.php:1627 menusplus.php:1637
+#: menusplus.php:1719 menusplus.php:1729
 msgid "Edit"
 msgstr ""
 
-#: menusplus.php:1631 menusplus.php:1641
+#: menusplus.php:1723 menusplus.php:1733
 msgid "Remove"
 msgstr ""
 
-#: menusplus.php:2120
+#: menusplus.php:2192
 msgid "Menus Plus+"
 msgstr ""
 
-#: menusplus.php:2134
+#: menusplus.php:2206
 msgid "Title:"
 msgstr ""
 
-#: menusplus.php:2143
+#: menusplus.php:2215
 msgid "Menu:"
 msgstr ""

@@ -3,7 +3,7 @@ Contributors: keighl
 Donate link: http://www.keighl.com/plugins/menus-plus/
 Tags: menu, widget, page order, category order, sub menus, lists, menu management, navigation, posts
 Requires at least: 2.8
-Tested up to: 2.9
+Tested up to: 3.0
 Stable tag: trunk
 
 Create multiple customized menus with pages, posts, categories, and URLS; widget and template tag. 
@@ -85,6 +85,9 @@ When you create/edit a hybrid list you have the option of supplying a URL. This 
 1. Adding some Menus Plus+ widgets. 
 
 == Changelog ==
+
+= 1.9.6 =
+* Fixed a bug where child pages as top menu items were quote wonky. Changed the page logic of the template tag.
 
 = 1.9.5 =
 * Better IIS support for hybrid/home/url
